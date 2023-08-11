@@ -1,0 +1,45 @@
+The core classes, functions, and methods that will be necessary for this task are:
+
+1. `argparse` module: This will be used to parse command line arguments.
+2. `PIL` module: This is the Pillow library that will be used for image manipulation.
+3. `resize_image` function: This function will take an image path, width, and height as arguments and resize the image accordingly.
+
+Now, let's start with the entry point file, `main.py`.
+
+main.py
+```python
+import argparse
+from PIL import Image
+import os
+
+def resize_image(image_path, width, height):
+    """Resizes an image to the specified width and height."""
+    with Image.open(image_path) as img:
+        resized_img = img.resize((width, height))
+        resized_img.save(f'resized_{os.path.basename(image_path)}')
+
+def main():
+    """Main function to parse arguments and call the resize function."""
+    parser = argparse.ArgumentParser(description='Resize an image.')
+    parser.add_argument('image_path', type=str, help='Path to the image file.')
+    parser.add_argument('width', type=int, help='Desired width of the image.')
+    parser.add_argument('height', type=int, help='Desired height of the image.')
+
+    args = parser.parse_args()
+
+    resize_image(args.image_path, args.width, args.height)
+
+if __name__ == "__main__":
+    main()
+```
+
+This is the only file needed for this task. It first defines a function `resize_image` that opens an image, resizes it, and saves the resized image with a new name. The `main` function uses `argparse` to parse command line arguments and then calls `resize_image` with the parsed arguments.
+
+The `requirements.txt` file for this project would look like this:
+
+requirements.txt
+```plaintext
+Pillow==8.2.0
+```
+
+This file specifies that the Pillow library is a dependency for this project. The version number is set to 8.2.0, but it can be changed to any version that is compatible with the rest of the project.
