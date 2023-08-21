@@ -1,0 +1,32 @@
+Program Specification:
+
+The program is a Python application that integrates two APIs: the Marketplace API and the Point-of-Sale API. The application will be triggered by a webhook called orderCreateWebhook from the Marketplace API. The webhook will be configured to send a POST request to a configured URL. 
+
+The application will perform a series of steps, each step being an HTTP request to one of the two APIs. The steps are as follows:
+
+1. Create an order in the Point-of-Sale API using data from the webhook.
+2. Update the order status in the Marketplace API.
+3. Get the menu from the Point-of-Sale API.
+4. If there is an error in any of the previous steps, publish the error to the Marketplace API.
+
+The application will also handle the authentication for both APIs using the OAuth2 client credentials flow. The client_id and client_secret for each API will be manually configured.
+
+Core Classes, Functions, and Methods:
+
+1. `OAuth2Client`: This class will handle the OAuth2 client credentials flow for both APIs. It will have methods to get and refresh the access token.
+
+2. `WebhookHandler`: This class will handle the incoming webhook from the Marketplace API. It will parse the webhook data and trigger the workflow.
+
+3. `Workflow`: This class will handle the workflow of the application. It will have methods for each step of the workflow.
+
+4. `APIClient`: This class will handle the HTTP requests to both APIs. It will have methods for each API endpoint that the application needs to interact with.
+
+5. `DataMapper`: This class will handle the mapping of data between the webhook, the API requests, and the API responses. It will have methods to apply the mapping rules defined in the data mapping JSON.
+
+6. `ErrorHandler`: This class will handle any errors that occur during the workflow. It will have methods to log the error and to publish the error to the Marketplace API.
+
+7. `main()`: This function will be the entry point of the application. It will start the webhook server and wait for incoming webhooks.
+
+8. `config.py`: This file will contain the configuration for the application, such as the client_id and client_secret for each API, the base URLs for the APIs, and the URL for the webhook.
+
+9. `utils.py`: This file will contain utility functions that are used throughout the application, such as functions to apply the formulas defined in the data mapping JSON.

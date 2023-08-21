@@ -1,0 +1,104 @@
+The code provided above seems to be correct and well-structured. However, there are a few points that need to be addressed:
+
+1. The `client_id`, `client_secret`, and `token_url` are hardcoded in the `main.py` file. It's better to use environment variables or a configuration file to store these sensitive data.
+
+2. The `get_menu` and `upsert_menu` methods in the `APIIntegration` class do not handle the case when the token is not yet generated. We need to ensure that the token is generated before making the API request.
+
+3. The `listen` method in the `WebhookTrigger` class is not implemented. We need to implement this method to start listening for the webhook.
+
+4. The `map_data` method in the `DataMapping` class is not implemented. We need to implement this method to map the data from the `get_menu` response to the `upsert_menu` request.
+
+Here is the updated code:
+
+`main.py`
+```python
+import os
+from oauth2_client import OAuth2Client
+from api_integration import APIIntegration
+from webhook_trigger import WebhookTrigger
+
+def main():
+    # Initialize OAuth2 clients for both APIs
+    pos_api_client = OAuth2Client(client_id=os.getenv('POS_API_CLIENT_ID'), client_secret=os.getenv('POS_API_CLIENT_SECRET'), token_url=os.getenv('POS_API_TOKEN_URL'))
+    marketplace_api_client = OAuth2Client(client_id=os.getenv('MARKETPLACE_API_CLIENT_ID'), client_secret=os.getenv('MARKETPLACE_API_CLIENT_SECRET'), token_url=os.getenv('MARKETPLACE_API_TOKEN_URL'))
+
+    # Generate tokens
+    pos_api_client.generate_token()
+    marketplace_api_client.generate_token()
+
+    # Initialize API integration
+    api_integration = APIIntegration(pos_api_client, marketplace_api_client)
+
+    # Initialize webhook trigger
+    webhook_trigger = WebhookTrigger(api_integration)
+
+    # Start listening for webhook
+    webhook_trigger.listen()
+
+if __name__ == "__main__":
+    main()
+```
+
+`api_integration.py`
+```python
+import requests
+from data_mapping import DataMapping
+
+class APIIntegration:
+    def __init__(self, pos_api_client, marketplace_api_client):
+        self.pos_api_client = pos_api_client
+        self.marketplace_api_client = marketplace_api_client
+        self.data_mapping = DataMapping()
+
+    def get_menu(self, store_id):
+        if not self.marketplace_api_client.token:
+            self.marketplace_api_client.generate_token()
+        headers = {
+            'Authorization': f'Bearer {self.marketplace_api_client.token}',
+            'X-Store-Id': store_id
+        }
+        response = requests.get('https://partners.cloudkitchens.com/v1/menus', headers=headers)
+        response.raise_for_status()
+        return response.json()
+
+    def upsert_menu(self, menu):
+        if not self.pos_api_client.token:
+            self.pos_api_client.generate_token()
+        headers = {
+            'Authorization': f'Bearer {self.pos_api_client.token}'
+        }
+        data = self.data_mapping.map_data(menu)
+        response = requests.post('https://partners.cloudkitchens.com/v1/menus', headers=headers, json=data)
+        response.raise_for_status()
+        return response.json()
+```
+
+`webhook_trigger.py`
+```python
+from flask import Flask, request
+
+class WebhookTrigger:
+    def __init__(self, api_integration):
+        self.api_integration = api_integration
+        self.app = Flask(__name__)
+
+    def listen(self):
+        @self.app.route('/webhook', methods=['POST'])
+        def handle_webhook():
+            data = request.get_json()
+            menu = self.api_integration.get_menu(data['storeId'])
+            self.api_integration.upsert_menu(menu)
+            return '', 200
+
+        self.app.run(host='0.0.0.0', port=8080)
+```
+
+`data_mapping.py`
+```python
+class DataMapping:
+    def map_data(self, data):
+        # Implement the data mapping logic here
+        return data
+```
+
+Please note that you need to set the environment variables `POS_API_CLIENT_ID`, `POS_API_CLIENT_SECRET`, `POS_API_TOKEN_URL`, `MARKETPLACE_API_CLIENT_ID`, `MARKETPLACE_API_CLIENT_SECRET`, and `MARKETPLACE_API_TOKEN_URL` before running the `main.py` script.

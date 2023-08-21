@@ -1,0 +1,15 @@
+{
+  "name": "api-integration",
+  "version": "1.0.0",
+  "description": "A Node.js application that integrates two APIs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "dotenv": "^8.2.0",
+    "jsonwebtoken": "^8.5.1",
+    "express": "^4.17.1"
+  }
+}

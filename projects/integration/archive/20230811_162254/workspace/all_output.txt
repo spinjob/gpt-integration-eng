@@ -1,0 +1,82 @@
+The core classes and functions that will be necessary for this task are:
+
+1. `FileOrganizer`: This class will be responsible for the main functionality of the tool. It will have methods to scan the directory, identify file types, and move files to corresponding folders.
+
+2. `get_file_type`: This function will be used to determine the file type based on the file extension.
+
+3. `move_file`: This function will be used to move a file from one directory to another.
+
+4. `main`: This function will be the entry point of the CLI tool. It will parse command line arguments and call the appropriate methods of the `FileOrganizer` class.
+
+Now, let's write the code for each file.
+
+**requirements.txt**
+```plaintext
+click==7.1.2
+```
+
+**file_organizer.py**
+```python
+import os
+import shutil
+import click
+
+class FileOrganizer:
+    def __init__(self, directory):
+        self.directory = directory
+
+    def get_file_type(self, filename):
+        """
+        Determine the file type based on the file extension.
+        """
+        _, ext = os.path.splitext(filename)
+        ext = ext.lower()
+
+        if ext in ['.jpg', '.png', '.gif']:
+            return 'images'
+        elif ext in ['.doc', '.docx', '.pdf']:
+            return 'documents'
+        elif ext in ['.mp3', '.wav', '.flac']:
+            return 'audio'
+        else:
+            return 'others'
+
+    def move_file(self, filename, file_type):
+        """
+        Move a file to the corresponding folder based on its file type.
+        """
+        src = os.path.join(self.directory, filename)
+        dest_dir = os.path.join(self.directory, file_type)
+        os.makedirs(dest_dir, exist_ok=True)
+        dest = os.path.join(dest_dir, filename)
+        shutil.move(src, dest)
+
+    def organize(self):
+        """
+        Organize files in the directory.
+        """
+        for filename in os.listdir(self.directory):
+            if os.path.isfile(os.path.join(self.directory, filename)):
+                file_type = self.get_file_type(filename)
+                self.move_file(filename, file_type)
+
+@click.command()
+@click.argument('directory')
+def main(directory):
+    """
+    The entry point of the CLI tool.
+    """
+    organizer = FileOrganizer(directory)
+    organizer.organize()
+
+if __name__ == "__main__":
+    main()
+```
+
+This CLI tool can be run from the command line by passing the directory as an argument. For example:
+
+```bash
+python file_organizer.py /path/to/directory
+```
+
+This will organize the files in the specified directory into 'images', 'documents', 'audio', and 'others' folders based on their file types.

@@ -1,0 +1,89 @@
+Here are the tests for the Python application based on the provided specification. We will use pytest for writing the tests.
+
+tests/test_webhook_handler.py
+```python
+import pytest
+from webhook_handler import WebhookHandler
+
+def test_handle_request():
+    handler = WebhookHandler()
+    request = {"body": {"metadata": {"storeId": "test-store-id"}}}
+    data = handler.handle_request(request)
+    assert data == {"metadata": {"storeId": "test-store-id"}}
+```
+
+tests/test_oauth2_authenticator.py
+```python
+import pytest
+from oauth2_authenticator import OAuth2Authenticator
+
+def test_authenticate():
+    authenticator = OAuth2Authenticator()
+    api_id = "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    token = authenticator.authenticate(api_id)
+    assert isinstance(token, str)
+```
+
+tests/test_http_requester.py
+```python
+import pytest
+from http_requester import HttpRequester
+
+def test_send_request():
+    requester = HttpRequester()
+    api_id = "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    method = "GET"
+    path = "/menu"
+    headers = {"Authorization": "Bearer test-token"}
+    body = None
+    response = requester.send_request(api_id, method, path, headers, body)
+    assert isinstance(response, dict)
+```
+
+tests/test_data_mapper.py
+```python
+import pytest
+from data_mapper import DataMapper
+
+def test_map_data():
+    mapper = DataMapper()
+    mapping_json = {
+        "X-Store-Id": {
+            "input": {"in": "body", "sourcePath": "metadata.storeId"},
+            "output": {"in": "header", "outputPath": "X-Store-Id"}
+        }
+    }
+    source_data = {"metadata": {"storeId": "test-store-id"}}
+    mapped_data = mapper.map_data(mapping_json, source_data)
+    assert mapped_data == {"X-Store-Id": "test-store-id"}
+```
+
+tests/test_workflow_executor.py
+```python
+import pytest
+from workflow_executor import WorkflowExecutor
+
+def test_execute_step():
+    executor = WorkflowExecutor()
+    step = {
+        "api_id": "2389bc50-2646-4e94-bb34-86c9ea23cd7e",
+        "method": "GET",
+        "path": "/menu",
+        "headers": {"X-Store-Id": "test-store-id"},
+        "body": None
+    }
+    response = executor.execute_step(step)
+    assert isinstance(response, dict)
+```
+
+tests/test_main.py
+```python
+import pytest
+from main import main
+
+def test_main():
+    response = main()
+    assert isinstance(response, dict)
+```
+
+These tests cover all the core classes, functions, and methods in the application. They check that the methods return the expected types of values. More detailed tests can be written to check the actual values returned by the methods, but this would require mocking the APIs and the webhook.

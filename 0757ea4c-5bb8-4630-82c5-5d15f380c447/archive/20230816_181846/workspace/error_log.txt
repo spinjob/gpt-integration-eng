@@ -1,0 +1,9 @@
+
+[notice] A new release of pip is available: 23.0.1 -> 23.2.1
+[notice] To update, run: pip install --upgrade pip
+Traceback (most recent call last):
+  File "/Users/spencerjohnson/Desktop/gpt-engineer/gpt_engineer/0757ea4c-5bb8-4630-82c5-5d15f380c447/workspace/main.py", line 37, in <module>
+    main()
+  File "/Users/spencerjohnson/Desktop/gpt-engineer/gpt_engineer/0757ea4c-5bb8-4630-82c5-5d15f380c447/workspace/main.py", line 22, in main
+    while True:
+KeyboardInterrupt

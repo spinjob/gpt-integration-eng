@@ -1,0 +1,23 @@
+The program is a Python application that integrates two APIs, the Point-of-Sale API and the Marketplace API. The application will be triggered by a webhook from the Marketplace API and will perform a series of HTTP requests to both APIs according to a predefined workflow.
+
+Program Features:
+1. Webhook Trigger: The application will be triggered by a webhook from the Marketplace API. The webhook will send a POST request to a configured URL. The application should be able to handle this POST request and extract necessary data from the request body.
+
+2. OAuth2 Authentication: Both APIs support OAuth2 authentication. The application should be able to authenticate with both APIs using OAuth2.
+
+3. HTTP Requests: The application will perform a series of HTTP requests to both APIs. The details of these requests, including the API, HTTP method, and path, will be defined in the workflow steps.
+
+4. Data Mapping: The application will map and adapt values from the webhook request body or previous HTTP requests' response bodies to the current HTTP request according to the data mapping JSON provided in the workflow steps.
+
+Core Classes, Functions, and Methods:
+1. `WebhookHandler`: This class will handle the webhook trigger. It will have a method `handle_request(request)` that takes in the POST request from the webhook and extracts necessary data from the request body.
+
+2. `OAuth2Authenticator`: This class will handle OAuth2 authentication with the APIs. It will have a method `authenticate(api_id)` that takes in the API identifier and returns an access token.
+
+3. `HttpRequester`: This class will perform HTTP requests to the APIs. It will have a method `send_request(api_id, method, path, headers, body)` that takes in the API identifier, HTTP method, path, headers, and body, and sends the HTTP request.
+
+4. `DataMapper`: This class will handle data mapping. It will have a method `map_data(mapping_json, source_data)` that takes in the data mapping JSON and the source data, and returns the mapped data.
+
+5. `WorkflowExecutor`: This class will execute the workflow steps. It will have a method `execute_step(step)` that takes in a workflow step and executes it.
+
+6. `main()`: This function will be the entry point of the application. It will create instances of the above classes and use them to execute the workflow.

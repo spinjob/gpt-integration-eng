@@ -1,0 +1,35 @@
+`main.py`
+```python
+import json
+from flask import Flask, request
+from oauth2_client import OAuth2Client
+from webhook_handler import WebhookHandler
+from workflow import Workflow
+
+app = Flask(__name__)
+
+marketplace_client = OAuth2Client(
+    client_id='be04e745-844d-4a6c-8fba-f71199dc8f05',
+    client_secret='MD727PM35KZCWP337TKQ',
+    token_url='https://partners.cloudkitchens.com/v1/auth/token',
+    scope='callback.error.write manager.menus manager.orders menus.async_job.read menus.get_current menus.read menus.upsert menus.upsert_hours orders.read ping'
+)
+
+pos_client = OAuth2Client(
+    client_id='04db98cc-0c84-47e2-b57f-bfd6329c4675',
+    client_secret='NUCGB6VKFLYQBZPMMBLA',
+    token_url='https://partners.cloudkitchens.com/v1/auth/token',
+    scope='menus.get_current menus.publish orders.update storefront.store_availability menus.entity_suspension orders.create'
+)
+
+workflow = Workflow(marketplace_client, pos_client)
+
+@app.route('/webhook', methods=['POST'])
+def handle_webhook():
+    webhook_data = request.get_json()
+    handler = WebhookHandler(webhook_data)
+    workflow.trigger(handler)
+    return '', 200
+
+if __name__ == '__main__':
+    app.run(port

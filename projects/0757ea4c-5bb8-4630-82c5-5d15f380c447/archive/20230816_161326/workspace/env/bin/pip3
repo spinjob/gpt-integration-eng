@@ -1,0 +1,8 @@
+#!/Users/spencerjohnson/Desktop/gpt-engineer/gpt_engineer/projects/0757ea4c-5bb8-4630-82c5-5d15f380c447/workspace/env/bin/python3.11
+# -*- coding: utf-8 -*-
+import re
+import sys
+from pip._internal.cli.main import main
+if __name__ == '__main__':
+    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.exit(main())

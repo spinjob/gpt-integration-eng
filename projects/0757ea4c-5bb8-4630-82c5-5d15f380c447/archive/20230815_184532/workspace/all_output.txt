@@ -1,0 +1,196 @@
+The project will be implemented in Python and will use the following libraries:
+- Flask: to create a web server that will receive the webhook POST request.
+- Requests: to make HTTP requests to the APIs.
+- Python-dotenv: to manage environment variables.
+- Pytest: for testing.
+
+The project will be structured as follows:
+- `main.py`: the entry point of the application. It will contain the Flask application and the route that will receive the webhook POST request.
+- `api.py`: this file will contain the `API` class, which will be responsible for making HTTP requests to the APIs.
+- `workflow.py`: this file will contain the `Workflow` class, which will be responsible for executing the workflow steps.
+- `data_mapping.py`: this file will contain the `DataMapping` class, which will be responsible for mapping the data between the webhook, the workflow steps, and the APIs.
+- `requirements.txt`: this file will list the Python libraries that the project depends on.
+- `.env`: this file will contain the environment variables, such as the API base URLs, the client IDs, and the client secrets.
+- `test_main.py`, `test_api.py`, `test_workflow.py`, `test_data_mapping.py`: these files will contain the tests for the corresponding classes.
+
+Let's start with the `requirements.txt` file:
+
+requirements.txt
+```plaintext
+flask==1.1.2
+requests==2.25.1
+python-dotenv==0.15.0
+pytest==6.2.2
+```
+
+Next, let's create the `.env` file:
+
+.env
+```plaintext
+MARKETPLACE_API_BASE_URL=https://partners.cloudkitchens.com
+MARKETPLACE_API_CLIENT_ID=replace_with_your_client_id
+MARKETPLACE_API_CLIENT_SECRET=replace_with_your_client_secret
+POINT_OF_SALE_API_BASE_URL=https://partners.cloudkitchens.com
+POINT_OF_SALE_API_CLIENT_ID=replace_with_your_client_id
+POINT_OF_SALE_API_CLIENT_SECRET=replace_with_your_client_secret
+```
+
+Now, let's create the `api.py` file:
+
+api.py
+```python
+import requests
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+class API:
+    def __init__(self, api_id):
+        self.api_id = api_id
+        self.base_url = os.getenv(f'{api_id.upper()}_API_BASE_URL')
+        self.client_id = os.getenv(f'{api_id.upper()}_API_CLIENT_ID')
+        self.client_secret = os.getenv(f'{api_id.upper()}_API_CLIENT_SECRET')
+        self.token = self.get_token()
+
+    def get_token(self):
+        url = f'{self.base_url}/v1/auth/token'
+        data = {
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
+            'scope': 'callback.error.write manager.menus manager.orders menus.async_job.read menus.get_current menus.read menus.upsert menus.upsert_hours orders.read ping',
+            'grant_type': 'client_credentials'
+        }
+        response = requests.post(url, data=data)
+        response.raise_for_status()
+        return response.json()['access_token']
+
+    def make_request(self, method, path, headers=None, params=None, data=None):
+        url = f'{self.base_url}{path}'
+        headers = headers or {}
+        headers['Authorization'] = f'Bearer {self.token}'
+        response = requests.request(method, url, headers=headers, params=params, json=data)
+        response.raise_for_status()
+        return response.json()
+```
+
+Next, let's create the `data_mapping.py` file:
+
+data_mapping.py
+```python
+class DataMapping:
+    def __init__(self, mapping_json):
+        self.mapping_json = mapping_json
+
+    def map_data(self, source_data):
+        mapped_data = {}
+        for key, mapping in self.mapping_json.items():
+            source_value = self.get_value_from_path(source_data, mapping['input']['path'])
+            if 'formulas' in mapping['input']:
+                for formula in mapping['input']['formulas']:
+                    source_value = self.apply_formula(source_value, formula)
+            self.set_value_in_path(mapped_data, mapping['output']['path'], source_value)
+        return mapped_data
+
+    def get_value_from_path(self, data, path):
+        parts = path.split('.')
+        for part in parts:
+            data = data[part]
+        return data
+
+    def set_value_in_path(self, data, path, value):
+        parts = path.split('.')
+        for part in parts[:-1]:
+            data = data.setdefault(part, {})
+        data[parts[-1]] = value
+
+    def apply_formula(self, value, formula):
+        if formula['formula'] == 'ifthen':
+            condition = formula['inputs']['ifThen'][0]['if']
+            if value == condition['value']:
+                return formula['inputs']['ifThen'][0]['then']['value']
+            else:
+                return formula['inputs']['ifThen'][0]['else']['value']
+        elif formula['formula'] == 'substring':
+            return value[formula['inputs']['substring']['startingIndex']:formula['inputs']['substring']['endingIndex']]
+        elif formula['formula'] == 'prepend':
+            return formula['inputs']['prepend'] + value
+        elif formula['formula'] == 'division':
+            return value / formula['inputs']['division']
+        else:
+            return value
+```
+
+Next, let's create the `workflow.py` file:
+
+workflow.py
+```python
+from api import API
+from data_mapping import DataMapping
+
+class Workflow:
+    def __init__(self, trigger_data):
+        self.trigger_data = trigger_data
+
+    def execute_step(self, api_id, method, path, data_mapping_json, previous_step_data=None):
+        api = API(api_id)
+        data_mapping = DataMapping(data_mapping_json)
+        source_data = previous_step_data or self.trigger_data
+        data = data_mapping.map_data(source_data)
+        return api.make_request(method, path, data=data)
+```
+
+Next, let's create the `main.py` file:
+
+main.py
+```python
+from flask import Flask, request
+from workflow import Workflow
+
+app = Flask(__name__)
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    trigger_data = request.json
+    workflow = Workflow(trigger_data)
+    step_1_data = workflow.execute_step('98ef9a91-f0ca-4e0a-acd3-4618904fd6b4', 'POST', '/createOrder', step_1_data_mapping_json)
+    step_2_data = workflow.execute_step('2389bc50-2646-4e94-bb34-86c9ea23cd7e', 'POST', '/updateOrderStatus/{orderId}', step_2_data_mapping_json, step_1_data)
+    step_3_data = workflow.execute_step('98ef9a91-f0ca-4e0a-acd3-4618904fd6b4', 'GET', '/getMenu', step_3_data_mapping_json, step_2_data)
+    step_4_data = workflow.execute_step('2389bc50-2646-4e94-bb34-86c9ea23cd7e', 'POST', '/publishError', step_4_data_mapping_json, step_3_data)
+    return 'OK', 200
+
+if __name__ == '__main__':
+    app.run(port=5000)
+```
+
+Finally, let's create the test files:
+
+test_api.py
+```python
+import pytest
+from api import API
+
+def test_get_token():
+    api = API('MARKETPLACE')
+    assert 'access_token' in api.token
+
+def test_make_request():
+    api = API('MARKETPLACE')
+    response = api.make_request('GET', '/ping')
+    assert response['status'] == 'OK'
+```
+
+test_data_mapping.py
+```python
+import pytest
+from data_mapping import DataMapping
+
+def test_map_data():
+    mapping_json = {
+        'name': {
+            'input': {
+                'path': 'firstName'
+            },
+            'output': {
+                'path': 'name'
+            }

@@ -1,0 +1,13 @@
+{
+  "name": "api-integration",
+  "version": "1.0.0",
+  "description": "Integrates two APIs using OAuth2 authentication",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "dotenv": "^8.2.0"
+  }
+}

@@ -1,0 +1,27 @@
+The program is a Python application that integrates two APIs: the Marketplace API and the Point-of-Sale API. The application will be triggered by a webhook called orderCreateWebhook from the Marketplace API. The webhook will be configured to send a POST request to a configured URL. The application will then perform a series of steps, each of which is an HTTP request to one of the two APIs. The data mapping between each step will be according to the provided JSON.
+
+The program should have the following features:
+
+1. Authentication: The program should be able to authenticate with both APIs using the OAuth2 client credentials flow. The client_id and client_secret for each API will be manually configured.
+
+2. Webhook handling: The program should be able to handle incoming webhook requests, parse the request body, and trigger the workflow.
+
+3. Workflow execution: The program should be able to execute a series of HTTP requests to the APIs in a specific order. The data mapping between each step should be according to the provided JSON.
+
+4. Error handling: The program should be able to handle any errors that occur during the workflow execution and log them for debugging purposes.
+
+The core classes, functions, and methods necessary for the program are:
+
+1. `OAuth2Client`: This class will handle the OAuth2 client credentials flow for both APIs. It will have methods for generating the access token and refreshing it when it expires.
+
+2. `WebhookHandler`: This class will handle incoming webhook requests. It will have a method for parsing the request body and triggering the workflow.
+
+3. `WorkflowExecutor`: This class will execute the workflow. It will have a method for each step in the workflow, and each method will make an HTTP request to one of the APIs.
+
+4. `DataMapper`: This class will handle the data mapping between each step according to the provided JSON. It will have methods for extracting data from the input, applying any necessary formulas, and setting the output.
+
+5. `ErrorHandler`: This class will handle any errors that occur during the workflow execution. It will have methods for logging the errors and optionally sending a notification.
+
+6. `main.py`: This is the entry point of the application. It will create instances of the above classes and start the webhook server.
+
+Each class and method should have comments explaining its purpose and how it works. The program should also have unit tests to ensure that each part is working correctly.

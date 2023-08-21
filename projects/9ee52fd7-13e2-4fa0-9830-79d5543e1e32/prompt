@@ -1,0 +1,487 @@
+Objective: Implement a Python application that integrates two APIs according to the specified API-specific security schemes and workflow requirements.  An engineer will rely on your initial implementation to run succesfully.  Please provide comments as you implement to allow a developer to understand the components of the implementation.
+
+API Context and Instructions: There are two REST Application Programming Interfaces (APIs) whose supported authentication schemes, requests, and data models that will be referenced in the requirements for this application.  In this section we define two categories of API information (1) The base URLs for a production and or a sandbox server for each API. These can be used to build the full HTTP request paths. (2) The Authentication or Security Scheme supported by the API.  Each APIs authentication scheme needs to be adhered to when you develop the project, so implement the project accordingly. 
+
+API (identifier: 2389bc50-2646-4e94-bb34-86c9ea23cd7e) Name: Marketplace API
+Production Server: https://partners.cloudkitchens.com
+Sandbox Server: https://partners.cloudkitchens.com
+
+First API:
+API (identifier: 98ef9a91-f0ca-4e0a-acd3-4618904fd6b4) Name: Point-of-Sale API
+Production Server: https://partners.cloudkitchens.com
+Sandbox Server: https://partners.cloudkitchens.com
+
+Second API:
+The authentication schemes supported by each API are as follows: 
+
+API: Point-of-Sale API (identifier: 98ef9a91-f0ca-4e0a-acd3-4618904fd6b4) Authentication:
+Security Scheme Type: oauth2
+Security Scheme Flow Type: clientCredentials
+Security Scheme Flow Token URL: /v1/auth/token
+Token Generation Request Parameters: The generate token request will require the following parameters sent as www-form-urlencoded data: 
+The client_id is a string value that will be manually configured
+The client_secret is a string value that will be manually configured
+The scope is a string with the value: menus.get_current menus.publish orders.update storefront.store_availability menus.entity_suspension orders.create
+The grant_type is a string with the value: client_credentials
+
+API: Marketplace API (identifier: 2389bc50-2646-4e94-bb34-86c9ea23cd7e) Authentication:
+Security Scheme Type: oauth2
+Security Scheme Flow Type: clientCredentials
+Security Scheme Flow Token URL: /v1/auth/token
+Token Generation Request Parameters: The generate token request will require the following parameters sent as www-form-urlencoded data: 
+The client_id is a string value that will be manually configured
+The client_secret is a string value that will be manually configured
+The scope is a string with the value: callback.error.write manager.menus manager.orders menus.async_job.read menus.get_current menus.read menus.upsert menus.upsert_hours orders.read ping
+The grant_type is a string with the value: client_credentials
+
+
+
+Workflow Context and Instructions: The integration workflow will be defined by a "workflow trigger" and series of sequential "workflow steps." A workflow trigger is the definition of the condition required to run the application.  Each step will be an HTTP request to one of the two involved APIs. 
+
+ Workflow Trigger Instructions: The workflow will be triggered by a webhook called menuPublishWebhook from API (2389bc50-2646-4e94-bb34-86c9ea23cd7e).  The webhook will be configured to send a POST request to a configured URL.  Use a placeholder for the webhook URL.
+
+Workflow Steps Instructions: The following series of steps will contain a combination of text and JSON to describe each HTTP request.  The text will describe the details of the HTTP request (the API that supports the request, the HTTP method, and the path to append to the server base URL for the API.  
+
+ The Data Mapping JSON will provide you detailed instructions on how to map and adapt a value coming from a configuration, webhook request body, or previous HTTP requests response body. The keys of the object represent either the key of a header/path/query parameter OR a dot-notation representation of a property in a request body. To help navigate the Data Mapping JSON, here are descriptions of its primary properties 
+
+ (MAPPING JSON PROPERTY: .input): The source of the value to use for the output property.  It will include an "in" property that will tell you where in the previous step to look for it; if it is "body" and the sourceNode is "trigger", then you will find the source value in the body of the webhook trigger.  If "in" is "body" and the sourceNode is an "action" then you will find the value in the response body of the previous steps HTTP request.  The "sourcePath" of the "input" is a dot-notation representation of where the property is located in an object like a webhook or response body. 
+
+ (MAPPING JSON PROPERTY .input.formulas) This array contains objects that each describe a function to apply to the input value to create the output value. The functions described should be applied in the order they appearin the array. If no "formulas" property exists or its empty for an input that means you should assume the value of the input is set to the output property without changing it.  
+
+ (MAPPING JSON PROPERTY: .output) The details of the parameter or property that will contain the value from the input in the current steps HTTP request. The "output.in" value will tell you if the property is a header parameter, path parameter, query parameter, or a propert in the request body.  If "in" === "body, then "outputPath" will describe a dot-notation representation of where the property is in the request body object.
+
+Step 1: API (identifier:2389bc50-2646-4e94-bb34-86c9ea23cd7e) getMenu
+Step 1 Data Mapping JSON:
+{
+  "X-Store-Id": {
+    "id": "22633e6a-2fa3-4afc-9b0a-170758834518",
+    "stepIndex": 1,
+    "input": {
+      "type": "string",
+      "description": "The unique identifier of the store in the partner application. This ID, along with the `Application ID`, will be used to match the correct store when performing operations. It cannot be longer than 255 characters and must only contain printable ASCII characters.",
+      "example": "partner-store-unique-identifier",
+      "key": "storeId",
+      "path": "metadata.storeId",
+      "in": "body",
+      "actionId": "6fe6c316-03f5-49b5-8c88-8cbaf32e9a51",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e",
+      "formulas": []
+    },
+    "output": {
+      "type": "string",
+      "description": "The unique identifier of the store in the partner application. This ID, along with the `Application ID`, will be used to match the correct store when performing operations. It cannot be longer than 255 characters and must only contain printable ASCII characters.",
+      "example": "partner-store-unique-identifier",
+      "path": "X-Store-Id",
+      "key": "X-Store-Id",
+      "name": "X-Store-Id",
+      "required": true,
+      "in": "header",
+      "actionId": "5dae6c3d-5e64-4506-aa0c-855ba294bb73",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "sourcePath": "metadata.storeId",
+    "targetPath": "X-Store-Id",
+    "sourceNode": "trigger",
+    "targetNode": "action-1-9ee52fd7-13e2-4fa0-9830-79d5543e1e32"
+  }
+}Step 2: API (identifier:98ef9a91-f0ca-4e0a-acd3-4618904fd6b4) upsertMenu
+Step 2 Data Mapping JSON:
+{
+  "categories.{{categoryId}}": {
+    "id": "611e1487-be36-47a2-8105-1c0df515eaf1",
+    "stepIndex": 2,
+    "input": {
+      "required": [
+        "id",
+        "name"
+      ],
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The identifier that exists in the third party system. During a menu publish event, uuidV4 ids will be generated for new entities that do not yet exist in the internal menu.",
+          "example": "b01485b0-034a-47c5-8a0a-0eeca08bf994"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of Category.",
+          "example": "Drinks"
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of Category.",
+          "example": "All drink items served up nice and fresh!"
+        },
+        "itemIds": {
+          "type": "array",
+          "default": [],
+          "description": "All items in the category.",
+          "items": {
+            "type": "string",
+            "schemaName": "inlineSchema"
+          },
+          "example": [
+            "fa4f0192-4c4e-4455-9db8-61d428c34969"
+          ]
+        }
+      },
+      "description": "Categories contain a list of Item references.",
+      "path": "categories.{{categoryId}}",
+      "key": "{{categoryId}}",
+      "parentContext": [
+        {
+          "contextType": "dictionary",
+          "dictionaryKey": "{{categoryId}}",
+          "parentContextKey": "categories",
+          "path": "categories.{{categoryId}}"
+        }
+      ],
+      "in": "body",
+      "actionId": "5dae6c3d-5e64-4506-aa0c-855ba294bb73",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e",
+      "formulas": []
+    },
+    "output": {
+      "required": [
+        "id",
+        "name"
+      ],
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The identifier that exists in the third party system. During a menu publish event, uuidV4 ids will be generated for new entities that do not yet exist in the internal menu.",
+          "example": "b01485b0-034a-47c5-8a0a-0eeca08bf994",
+          "required": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of Category.",
+          "example": "Drinks",
+          "required": true
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of Category.",
+          "example": "All drink items served up nice and fresh!",
+          "required": false
+        },
+        "itemIds": {
+          "type": "array",
+          "default": [],
+          "description": "All items in the category.",
+          "items": {
+            "type": "string",
+            "schemaName": "inlineSchema"
+          },
+          "example": [
+            "fa4f0192-4c4e-4455-9db8-61d428c34969"
+          ],
+          "required": false
+        }
+      },
+      "description": "Categories contain a list of Item references.",
+      "path": "categories.{{categoryId}}",
+      "key": "{{categoryId}}",
+      "parentContext": [
+        {
+          "contextType": "dictionary",
+          "dictionaryKey": "{{categoryId}}",
+          "parentContextKey": "categories",
+          "path": "categories.{{categoryId}}"
+        }
+      ],
+      "in": "body",
+      "actionId": "8aca87a9-6d8e-4845-8ea6-c1e03c8cf8e6",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "categories.{{categoryId}}",
+    "targetPath": "categories.{{categoryId}}",
+    "sourceNode": "action-1-9ee52fd7-13e2-4fa0-9830-79d5543e1e32",
+    "targetNode": "action-2-5cc517ee-e055-43e8-a9f6-4660fd044a53"
+  },
+  "categories.{{categoryId}}.id": {
+    "id": "3760d45d-366e-483c-92ae-e9385a9fd4e5",
+    "stepIndex": 2,
+    "input": {
+      "type": "string",
+      "description": "The identifier that exists in the third party system. During a menu publish event, uuidV4 ids will be generated for new entities that do not yet exist in the internal menu.",
+      "example": "b01485b0-034a-47c5-8a0a-0eeca08bf994",
+      "path": "categories.{{categoryId}}.id",
+      "key": "id",
+      "parentContext": [
+        {
+          "contextType": "dictionary",
+          "dictionaryKey": "{{categoryId}}",
+          "parentContextKey": "categories",
+          "path": "categories.{{categoryId}}.id"
+        }
+      ],
+      "in": "body",
+      "actionId": "5dae6c3d-5e64-4506-aa0c-855ba294bb73",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e",
+      "formulas": []
+    },
+    "output": {
+      "key": "id",
+      "path": "categories.{{categoryId}}.id",
+      "type": "string",
+      "description": "The identifier that exists in the third party system. During a menu publish event, uuidV4 ids will be generated for new entities that do not yet exist in the internal menu.",
+      "example": "b01485b0-034a-47c5-8a0a-0eeca08bf994",
+      "required": true,
+      "parentContext": [
+        {
+          "contextType": "dictionary",
+          "dictionaryKey": "{{categoryId}}",
+          "parentContextKey": "categories"
+        }
+      ],
+      "in": "body",
+      "actionId": "8aca87a9-6d8e-4845-8ea6-c1e03c8cf8e6",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "categories.{{categoryId}}.id",
+    "targetPath": "categories.{{categoryId}}.id",
+    "sourceNode": "action-1-9ee52fd7-13e2-4fa0-9830-79d5543e1e32",
+    "targetNode": "action-2-5cc517ee-e055-43e8-a9f6-4660fd044a53"
+  },
+  "categories.{{categoryId}}.name": {
+    "id": "32baa6f2-9a8a-4d39-88c0-eac4a0143a52",
+    "stepIndex": 2,
+    "input": {
+      "type": "string",
+      "description": "Name of Category.",
+      "example": "Drinks",
+      "path": "categories.{{categoryId}}.name",
+      "key": "name",
+      "parentContext": [
+        {
+          "contextType": "dictionary",
+          "dictionaryKey": "{{categoryId}}",
+          "parentContextKey": "categories",
+          "path": "categories.{{categoryId}}.name"
+        }
+      ],
+      "in": "body",
+      "actionId": "5dae6c3d-5e64-4506-aa0c-855ba294bb73",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e",
+      "formulas": []
+    },
+    "output": {
+      "key": "name",
+      "path": "categories.{{categoryId}}.name",
+      "type": "string",
+      "description": "Name of Category.",
+      "example": "Drinks",
+      "required": true,
+      "parentContext": [
+        {
+          "contextType": "dictionary",
+          "dictionaryKey": "{{categoryId}}",
+          "parentContextKey": "categories"
+        }
+      ],
+      "in": "body",
+      "actionId": "8aca87a9-6d8e-4845-8ea6-c1e03c8cf8e6",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "categories.{{categoryId}}.name",
+    "targetPath": "categories.{{categoryId}}.name",
+    "sourceNode": "action-1-9ee52fd7-13e2-4fa0-9830-79d5543e1e32",
+    "targetNode": "action-2-5cc517ee-e055-43e8-a9f6-4660fd044a53"
+  },
+  "modifierGroups.{{modifierGroupId}}": {
+    "id": "d32e4dce-e734-49ee-9f68-b43ade92925f",
+    "stepIndex": 2,
+    "input": {
+      "title": "All ModifierGroups for the Store, indexed by ID",
+      "required": [
+        "id",
+        "name"
+      ],
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The identifier that exists in the third party system. During a menu publish event, uuidV4 ids will be generated for new entities that do not yet exist in the internal menu.",
+          "example": "da0e4e94-5670-4175-897a-3b7dde45bed5"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of ModifierGroup.",
+          "example": "Choose your type of bagel"
+        },
+        "minimumSelections": {
+          "minimum": 0,
+          "type": "integer",
+          "description": "Minimum number of selections customers can make in this ModifierGroup. 0 means no min limits.",
+          "format": "int32"
+        },
+        "maximumSelections": {
+          "minimum": 0,
+          "type": "integer",
+          "description": "Maximum number of selections customers can make in this ModifierGroup. 0 means no max limits.",
+          "format": "int32"
+        },
+        "maxPerModifierSelectionQuantity": {
+          "minimum": 0,
+          "default": 1,
+          "type": "integer",
+          "description": "Maximum number of selections customers can make for each modifier item in this ModifierGroup. 0 means there is no limit to how many times they can select a single modifier item. If not specified, a value of 1 will be used as the default value.",
+          "format": "int32"
+        },
+        "itemIds": {
+          "type": "array",
+          "default": [],
+          "description": "Identifiers of each Item within this ModifierGroup.",
+          "items": {
+            "type": "string",
+            "schemaName": "inlineSchema"
+          }
+        },
+        "description": {
+          "type": "string",
+          "description": "The description for this modifier group.",
+          "example": "Choose any of these delicious types of bagels"
+        }
+      },
+      "description": "Items are sold on the menu. Modifiers to items are items themselves and their relationship is defined by ModifierGroup.",
+      "path": "modifierGroups.{{modifierGroupId}}",
+      "key": "{{modifierGroupId}}",
+      "parentContext": [
+        {
+          "contextType": "dictionary",
+          "dictionaryKey": "{{modifierGroupId}}",
+          "parentContextKey": "modifierGroups",
+          "path": "modifierGroups.{{modifierGroupId}}"
+        }
+      ],
+      "in": "body",
+      "actionId": "5dae6c3d-5e64-4506-aa0c-855ba294bb73",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e",
+      "formulas": []
+    },
+    "output": {
+      "title": "All ModifierGroups for the Store, indexed by ID",
+      "required": [
+        "id",
+        "name"
+      ],
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identifier for ModifierGroup.",
+          "example": "db5740de-429c-4f06-b264-3d41dce6d8c3",
+          "required": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of ModifierGroup.",
+          "example": "Choose your type of bagel",
+          "required": true
+        },
+        "minimumSelections": {
+          "minimum": 0,
+          "type": "integer",
+          "description": "Minimum number of selections customers can make in this ModifierGroup. 0 means no min limits.",
+          "format": "int32",
+          "required": false
+        },
+        "maximumSelections": {
+          "minimum": 0,
+          "type": "integer",
+          "description": "Maximum number of selections customers can make in this ModifierGroup. 0 means no max limits.",
+          "format": "int32",
+          "required": false
+        },
+        "maxPerModifierSelectionQuantity": {
+          "minimum": 0,
+          "type": "integer",
+          "description": "Maximum number of selections customers can make for each modifier item in this ModifierGroup. 0 means there is no limit to how many times they can select a single modifier item. If not specified, a value of 1 will be used as the default value.",
+          "format": "int32",
+          "required": false
+        },
+        "itemIds": {
+          "type": "array",
+          "default": [],
+          "description": "Identifiers of each Item within this ModifierGroup.",
+          "items": {
+            "type": "string",
+            "schemaName": "inlineSchema"
+          },
+          "required": false
+        },
+        "description": {
+          "type": "string",
+          "description": "Description for this ModifierGroup.",
+          "example": "Choose any of these delicious types of bagels",
+          "required": false
+        }
+      },
+      "description": "Items are sold on the menu. Modifiers to items are items themselves and their relationship is defined by ModifierGroup.",
+      "path": "modifierGroups.{{modifierGroupId}}",
+      "key": "{{modifierGroupId}}",
+      "parentContext": [
+        {
+          "contextType": "dictionary",
+          "dictionaryKey": "{{modifierGroupId}}",
+          "parentContextKey": "modifierGroups",
+          "path": "modifierGroups.{{modifierGroupId}}"
+        }
+      ],
+      "in": "body",
+      "actionId": "8aca87a9-6d8e-4845-8ea6-c1e03c8cf8e6",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "modifierGroups.{{modifierGroupId}}",
+    "targetPath": "modifierGroups.{{modifierGroupId}}",
+    "sourceNode": "action-1-9ee52fd7-13e2-4fa0-9830-79d5543e1e32",
+    "targetNode": "action-2-5cc517ee-e055-43e8-a9f6-4660fd044a53"
+  },
+  "modifierGroups.{{modifierGroupId}}.id": {
+    "id": "84b09a13-24ef-4dd8-a2bf-ae84905eebe6",
+    "stepIndex": 2,
+    "input": {
+      "type": "string",
+      "description": "The identifier that exists in the third party system. During a menu publish event, uuidV4 ids will be generated for new entities that do not yet exist in the internal menu.",
+      "example": "da0e4e94-5670-4175-897a-3b7dde45bed5",
+      "path": "modifierGroups.{{modifierGroupId}}.id",
+      "key": "id",
+      "parentContext": [
+        {
+          "contextType": "dictionary",
+          "dictionaryKey": "{{modifierGroupId}}",
+          "parentContextKey": "modifierGroups",
+          "path": "modifierGroups.{{modifierGroupId}}.id"
+        }
+      ],
+      "in": "body",
+      "actionId": "5dae6c3d-5e64-4506-aa0c-855ba294bb73",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e",
+      "formulas": []
+    },
+    "output": {
+      "key": "id",
+      "path": "modifierGroups.{{modifierGroupId}}.id",
+      "type": "string",
+      "description": "Identifier for ModifierGroup.",
+      "example": "db5740de-429c-4f06-b264-3d41dce6d8c3",
+      "required": true,
+      "parentContext": [
+        {
+          "contextType": "dictionary",
+          "dictionaryKey": "{{modifierGroupId}}",
+          "parentContextKey": "modifierGroups"
+        }
+      ],
+      "in": "body",
+      "actionId": "8aca87a9-6d8e-4845-8ea6-c1e03c8cf8e6",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "modifierGroups.{{modifierGroupId}}.id",
+    "targetPath": "modifierGroups.{{modifierGroupId}}.id",
+    "sourceNode": "action-1-9ee52fd7-13e2-4fa0-9830-79d5543e1e32",
+    "targetNode": "action-2-5cc517ee-e055-43e8-a9f6-4660fd044a53"
+  }
+}

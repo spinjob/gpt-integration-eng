@@ -1,0 +1,39 @@
+Program Specification:
+
+The program is a Python application that integrates two APIs: Point-of-Sale API and Marketplace API. The application will be triggered by a webhook called orderCreateWebhook from the Marketplace API. The webhook will be configured to send a POST request to a configured URL. 
+
+The application will perform a series of steps, each step being an HTTP request to one of the two APIs. The steps are as follows:
+
+1. Create an order in the Point-of-Sale API using data from the webhook.
+2. Update the order status in the Marketplace API.
+3. Get the menu from the Point-of-Sale API.
+4. If there is an error in any of the previous steps, publish the error to the Marketplace API.
+
+Each step involves data mapping from the input (webhook or previous step's response) to the output (request to the API). The data mapping is defined in a JSON format, specifying the source and target of each data field, and any transformations that need to be applied.
+
+Core Classes, Functions, and Methods:
+
+1. `WebhookHandler`: This class will handle the incoming webhook, parse the request, and trigger the workflow.
+   - `handle_request(request: Request) -> None`: This method will be called when a webhook is received. It will parse the request and trigger the workflow.
+
+2. `Workflow`: This class will manage the workflow, executing each step in sequence.
+   - `execute() -> None`: This method will execute the workflow, calling each step in sequence.
+
+3. `Step`: This class represents a step in the workflow. It will be subclassed for each specific step.
+   - `execute() -> None`: This method will execute the step, making the HTTP request to the API and handling the response.
+
+4. `DataMapper`: This class will handle the data mapping for each step.
+   - `map(input: Dict, mapping: Dict) -> Dict`: This method will take the input data and a mapping definition, and return the mapped data.
+
+5. `API`: This class represents an API. It will be subclassed for each specific API.
+   - `request(method: str, path: str, headers: Dict, body: Dict) -> Dict`: This method will make an HTTP request to the API and return the response.
+
+6. `OAuth2Client`: This class will handle the OAuth2 authentication for the APIs.
+   - `get_token() -> str`: This method will get an access token from the OAuth2 server.
+   - `request(method: str, path: str, headers: Dict, body: Dict) -> Dict`: This method will make an authenticated HTTP request to the API and return the response.
+
+7. `Formula`: This class represents a transformation formula. It will be subclassed for each specific formula.
+   - `apply(input: Any) -> Any`: This method will apply the formula to the input and return the result.
+
+8. `ErrorPublisher`: This class will handle publishing errors to the Marketplace API.
+   - `publish(error: Exception) -> None`: This method will publish an error to the API.

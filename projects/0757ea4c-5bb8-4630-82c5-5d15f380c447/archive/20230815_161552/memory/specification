@@ -1,0 +1,25 @@
+The program is a Python application that integrates two APIs: the Marketplace API and the Point-of-Sale API. The application will be triggered by a webhook called orderCreateWebhook from the Marketplace API. The webhook will send a POST request to a configured URL. The application will then perform a series of HTTP requests to both APIs, following a specific workflow. The workflow involves creating an order, updating the order status, getting the menu, and publishing an error if necessary. 
+
+The application will need to adhere to the authentication schemes of both APIs, which are both oauth2 with clientCredentials flow. The application will need to generate tokens for both APIs by sending requests to their respective token URLs with the appropriate parameters.
+
+The application will need to handle data mapping for each step of the workflow. The data mapping will involve extracting values from the webhook request body or previous HTTP requests response body, applying formulas to the values if necessary, and setting the values to the appropriate parameters or properties in the current step's HTTP request.
+
+The application will also need to handle errors and exceptions, such as failed HTTP requests or invalid data.
+
+Core Classes, Functions, and Methods:
+
+1. `APIClient`: This class will be responsible for sending HTTP requests to the APIs. It will have methods for each type of request (GET, POST, etc.) and will handle token generation and authentication.
+
+2. `DataMapper`: This class will be responsible for handling the data mapping for each step of the workflow. It will have methods for extracting values from the input, applying formulas, and setting the values to the output.
+
+3. `WorkflowManager`: This class will be responsible for managing the workflow of the application. It will have methods for each step of the workflow and will use the `APIClient` and `DataMapper` classes to perform the steps.
+
+4. `ErrorHandler`: This class will be responsible for handling errors and exceptions. It will have methods for logging errors, retrying failed requests, and publishing errors to the Marketplace API.
+
+5. `main()`: This function will be the entry point of the application. It will create instances of the above classes and start the workflow.
+
+6. `get_config()`: This function will be responsible for getting the configuration of the application, such as the client IDs and secrets for the APIs, the webhook URL, and other necessary parameters.
+
+7. `run_workflow()`: This function will be responsible for running the workflow of the application. It will call the methods of the `WorkflowManager` class in the correct order and handle any exceptions that occur.
+
+8. `handle_webhook()`: This function will be responsible for handling the webhook that triggers the application. It will extract the necessary data from the webhook request and pass it to the `run_workflow()` function.

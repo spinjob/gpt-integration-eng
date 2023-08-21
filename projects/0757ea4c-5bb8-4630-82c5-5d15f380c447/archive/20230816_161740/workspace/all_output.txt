@@ -1,0 +1,176 @@
+The architecture of the application will be divided into several parts:
+
+1. `main.py`: This is the entry point of the application. It will handle the webhook trigger and initiate the workflow.
+
+2. `api_client.py`: This module will contain the `APIClient` class which will be responsible for making HTTP requests to the APIs.
+
+3. `auth.py`: This module will contain the `OAuth2ClientCredentials` class which will handle the OAuth2 client credentials flow for both APIs.
+
+4. `workflow.py`: This module will contain the `Workflow` class which will execute the workflow steps.
+
+5. `data_mapper.py`: This module will contain the `DataMapper` class which will handle the data mapping between each step.
+
+6. `formulas.py`: This module will contain the functions for the formulas used in the data mapping.
+
+7. `requirements.txt`: This file will list all the Python dependencies required by the application.
+
+Now, let's write the code for each file.
+
+`main.py`
+```python
+from flask import Flask, request
+from workflow import Workflow
+
+app = Flask(__name__)
+workflow = Workflow()
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    data = request.get_json()
+    workflow.execute(data)
+    return '', 200
+
+if __name__ == '__main__':
+    app.run(port=5000)
+```
+
+`api_client.py`
+```python
+import requests
+
+class APIClient:
+    def __init__(self, base_url, auth):
+        self.base_url = base_url
+        self.auth = auth
+
+    def request(self, method, path, headers=None, params=None, json=None):
+        url = self.base_url + path
+        headers = headers or {}
+        headers['Authorization'] = f'Bearer {self.auth.get_token()}'
+        response = requests.request(method, url, headers=headers, params=params, json=json)
+        response.raise_for_status()
+        return response.json()
+```
+
+`auth.py`
+```python
+import requests
+
+class OAuth2ClientCredentials:
+    def __init__(self, token_url, client_id, client_secret, scope):
+        self.token_url = token_url
+        self.client_id = client_id
+        self.client_secret = client_secret
+        self.scope = scope
+        self.token = None
+
+    def get_token(self):
+        if not self.token:
+            data = {
+                'client_id': self.client_id,
+                'client_secret': self.client_secret,
+                'scope': self.scope,
+                'grant_type': 'client_credentials'
+            }
+            response = requests.post(self.token_url, data=data)
+            response.raise_for_status()
+            self.token = response.json()['access_token']
+        return self.token
+```
+
+`workflow.py`
+```python
+from api_client import APIClient
+from auth import OAuth2ClientCredentials
+from data_mapper import DataMapper
+
+class Workflow:
+    def __init__(self):
+        self.marketplace_api = APIClient(
+            'https://partners.cloudkitchens.com',
+            OAuth2ClientCredentials(
+                'https://partners.cloudkitchens.com/v1/auth/token',
+                'be04e745-844d-4a6c-8fba-f71199dc8f05',
+                'MD727PM35KZCWP337TKQ',
+                'callback.error.write manager.menus manager.orders menus.async_job.read menus.get_current menus.read menus.upsert menus.upsert_hours orders.read ping'
+            )
+        )
+        self.pos_api = APIClient(
+            'https://partners.cloudkitchens.com',
+            OAuth2ClientCredentials(
+                'https://partners.cloudkitchens.com/v1/auth/token',
+                '04db98cc-0c84-47e2-b57f-bfd6329c4675',
+                'NUCGB6VKFLYQBZPMMBLA',
+                'menus.get_current menus.publish orders.update storefront.store_availability menus.entity_suspension orders.create'
+            )
+        )
+        self.data_mapper = DataMapper()
+
+    def execute(self, trigger_data):
+        # Step 1: Create order
+        data_mapping = self.data_mapper.map(trigger_data, step1_data_mapping_json)
+        response = self.pos_api.request('POST', '/orders', json=data_mapping)
+        # Step 2: Update order status
+        data_mapping = self.data_mapper.map(response, step2_data_mapping_json)
+        self.marketplace_api.request('PUT', f'/orders/{data_mapping["orderId"]}', json=data_mapping)
+        # Step 3: Get menu
+        data_mapping = self.data_mapper.map(response, step3_data_mapping_json)
+        self.pos_api.request('GET', '/menu', headers=data_mapping)
+        # Step 4: Publish error
+        data_mapping = self.data_mapper.map(response, step4_data_mapping_json)
+        self.marketplace_api.request('POST', '/errors', headers=data_mapping)
+```
+
+`data_mapper.py`
+```python
+import formulas
+
+class DataMapper:
+    def map(self, source_data, mapping_json):
+        target_data = {}
+        for key, mapping in mapping_json.items():
+            value = self.get_value(source_data, mapping['input'])
+            for formula in mapping['input'].get('formulas', []):
+                value = getattr(formulas, formula['formula'])(value, **formula['inputs'])
+            self.set_value(target_data, mapping['output'], value)
+        return target_data
+
+    def get_value(self, data, input):
+        keys = input['sourcePath'].split('.')
+        for key in keys:
+            data = data[key]
+        return data
+
+    def set_value(self, data, output, value):
+        keys = output['targetPath'].split('.')
+        for key in keys[:-1]:
+            data = data.setdefault(key, {})
+        data[keys[-1]] = value
+```
+
+`formulas.py`
+```python
+def ifthen(value, ifThen):
+    for condition in ifThen:
+        if condition['if']['condition'] == 'equals' and value == condition['if']['value']:
+            return condition['then']['value']
+        else:
+            return condition['else']['value']
+
+def substring(value, startingIndex, endingIndex):
+    return value[startingIndex:endingIndex]
+
+def prepend(value, prepend):
+    return prepend + value
+
+def division(value, division):
+    return value / division
+```
+
+`requirements.txt`
+```
+flask==1.1.2
+requests==2.24.0
+```
+
+This application can be run by executing `python main.py` in the terminal. It will start a Flask server that listens for POST requests on `http://localhost:5000/webhook`. The workflow will be triggered when a webhook is received.

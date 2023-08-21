@@ -1,0 +1,5 @@
+step_name,prompt_tokens_in_step,completion_tokens_in_step,total_tokens_in_step,total_prompt_tokens,total_completion_tokens,total_tokens
+gen_spec,7222,594,7816,7222,594,7816
+gen_unit_tests,7778,625,8403,15000,1219,16219
+gen_code,8195,227,8422,23195,1446,24641
+gen_entrypoint,397,55,452,23592,1501,25093

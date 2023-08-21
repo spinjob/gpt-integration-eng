@@ -2,6 +2,7 @@ import inspect
 import re
 import subprocess
 import logging
+import os
 
 from enum import Enum
 from typing import List, Union
@@ -14,9 +15,12 @@ from gpt_engineer.chat_to_files import to_files
 from gpt_engineer.db import DBs
 from gpt_engineer.learning import human_input
 
+
 Message = Union[AIMessage, HumanMessage, SystemMessage]
 
 logging.basicConfig(level=logging.INFO)
+
+MAX_ITERATIONS = 3
 
 def setup_sys_prompt(dbs: DBs) -> str:
     return (
@@ -31,8 +35,10 @@ def get_prompt(dbs: DBs, project_prompt: str = None) -> str:
         print("Using project_prompt")
         print(project_prompt)
         return project_prompt;
+    
     print("Using dbs.input")
     print(dbs.input)
+
     assert (
         "prompt" in dbs.input or "main_prompt" in dbs.input
     ), "Please put your prompt in the file `prompt` in the project directory"
@@ -117,21 +123,36 @@ def clarify(ai: AI, dbs: DBs, project_prompt: str = None) -> List[Message]:
     return messages
 
 
-def gen_spec(ai: AI, dbs: DBs) -> List[Message]:
+def gen_spec(ai: AI, dbs: DBs, project_prompt: str = None) -> List[Message]:
     print("Running gen_spec")
-    print("project_prompt", dbs.input['prompt'])
     """
     Generate a spec from the main prompt + clarifications and save the results to
     the workspace
     """
     messages = [
         ai.fsystem(setup_sys_prompt(dbs)),
-        ai.fsystem(f"Instructions: {dbs.input['prompt']}"),
+        ai.fsystem(f"Instructions: {project_prompt}"),
     ]
 
     messages = ai.next(messages, dbs.preprompts["spec"], step_name=curr_fn())
 
     dbs.memory["specification"] = messages[-1].content.strip()
+
+    # Original Implementation
+        # print("Running gen_spec")
+        # print("project_prompt", dbs.input['prompt'])
+        # """
+        # Generate a spec from the main prompt + clarifications and save the results to
+        # the workspace
+        # """
+        # messages = [
+        #     ai.fsystem(setup_sys_prompt(dbs)),
+        #     ai.fsystem(f"Instructions: {dbs.input['prompt']}"),
+        # ]
+
+        # messages = ai.next(messages, dbs.preprompts["spec"], step_name=curr_fn())
+
+        # dbs.memory["specification"] = messages[-1].content.strip()
 
     return messages
 
@@ -158,20 +179,37 @@ def respec(ai: AI, dbs: DBs) -> List[Message]:
     return messages
 
 
-def gen_unit_tests(ai: AI, dbs: DBs) -> List[dict]:
+def gen_unit_tests(ai: AI, dbs: DBs, project_prompt: str = None) -> List[dict]:
+    
+    print("Running gen_unit_tests")
     """
     Generate unit tests based on the specification, that should work.
     """
     messages = [
         ai.fsystem(setup_sys_prompt(dbs)),
-        ai.fuser(f"Instructions: {dbs.input['prompt']}"),
+        ai.fuser(f"Instructions: {project_prompt}"),
         ai.fuser(f"Specification:\n\n{dbs.memory['specification']}"),
     ]
 
     messages = ai.next(messages, dbs.preprompts["unit_tests"], step_name=curr_fn())
 
     dbs.memory["unit_tests"] = messages[-1].content.strip()
-    to_files(dbs.memory["unit_tests"], dbs.workspace)
+    to_files(dbs.memory["unit_tests"], dbs.workspace)   
+
+    # Original Implementation
+        # """
+        # Generate unit tests based on the specification, that should work.
+        # """
+        # messages = [
+        #     ai.fsystem(setup_sys_prompt(dbs)),
+        #     ai.fuser(f"Instructions: {dbs.input['prompt']}"),
+        #     ai.fuser(f"Specification:\n\n{dbs.memory['specification']}"),
+        # ]
+
+        # messages = ai.next(messages, dbs.preprompts["unit_tests"], step_name=curr_fn())
+
+        # dbs.memory["unit_tests"] = messages[-1].content.strip()
+        # to_files(dbs.memory["unit_tests"], dbs.workspace)
 
     return messages
 
@@ -189,58 +227,64 @@ def gen_clarified_code(ai: AI, dbs: DBs, project_prompt: str = None) -> List[dic
     return messages
 
 
-def gen_code(ai: AI, dbs: DBs) -> List[dict]:
+def gen_code(ai: AI, dbs: DBs, project_prompt: str = None) -> List[dict]:
+    print("Running gen_code")
     # get the messages from previous step
     messages = [
         ai.fsystem(setup_sys_prompt(dbs)),
-        ai.fuser(f"Instructions: {dbs.input['prompt']}"),
+        ai.fuser(f"Instructions: {project_prompt}"),
         ai.fuser(f"Specification:\n\n{dbs.memory['specification']}"),
         ai.fuser(f"Unit tests:\n\n{dbs.memory['unit_tests']}"),
     ]
     messages = ai.next(messages, dbs.preprompts["use_qa"], step_name=curr_fn())
     to_files(messages[-1].content.strip(), dbs.workspace)
+
+    # Original Implementation
+        # # get the messages from previous step
+        # messages = [
+        #     ai.fsystem(setup_sys_prompt(dbs)),
+        #     ai.fuser(f"Instructions: {dbs.input['prompt']}"),
+        #     ai.fuser(f"Specification:\n\n{dbs.memory['specification']}"),
+        #     ai.fuser(f"Unit tests:\n\n{dbs.memory['unit_tests']}"),
+        # ]
+        # messages = ai.next(messages, dbs.preprompts["use_qa"], step_name=curr_fn())
+        # to_files(messages[-1].content.strip(), dbs.workspace)
     return messages
 
 
-def execute_entrypoint(ai: AI, dbs: DBs, project_prompt: str = None) -> List[dict]:
-    command = dbs.workspace["run.sh"]
+def execute_entrypoint(ai: AI, dbs: DBs, project_prompt: str = None, handle_errors: bool = True, iteration: int = 0) -> List[dict]:
 
-    print("Code execution has been skipped.")
-    logging.info("Code execution has been skipped.")
-    
+    print("Executing the code...")
+    error_log = []
 
-    # Commented Out previous implementation that used subprocess and relied on the user to confirm execution
-        # print("Do you want to execute this code?")
-        # print()
-        # print(command)
-        # print()
-        # print('If yes, press enter. Otherwise, type "no"')
-        # print()
-        # if input() not in ["", "y", "yes"]:
-        #     print("Ok, not executing the code.")
-        #     return []
-        # print("Executing the code...")
-        # print()
-        # print(
-        #     colored(
-        #         "Note: If it does not work as expected, consider running the code"
-        #         + " in another way than above.",
-        #         "green",
-        #     )
-        # )
-        # print()
-        # print("You can press ctrl+c *once* to stop the execution.")
-        # print()
+    # Open a subprocess and redirect stderr to capture errors
+    with subprocess.Popen("bash run.sh", shell=True, cwd=dbs.workspace.path, stderr=subprocess.PIPE) as p:
+        try:
+            # Wait for the process to complete and returns stdout, stderr
+            _, stderr = p.communicate() 
+        except KeyboardInterrupt:
+            print()
+            print("Stopping execution.")
+            print("Execution stopped.")
+            p.kill()
+            print()
 
-        # p = subprocess.Popen("bash run.sh", shell=True, cwd=dbs.workspace.path)
-        # try:
-        #     p.wait()
-        # except KeyboardInterrupt:
-        #     print()
-        #     print("Stopping execution.")
-        #     print("Execution stopped.")
-        #     p.kill()
-        #     print()
+        if stderr:
+            error_log = stderr.decode().splitlines() 
+
+    # Write the error log if there are any errors
+    if handle_errors and error_log:
+        print(f"Execution error(s) detected")
+        error_log_path = os.path.join(dbs.workspace.path, "error_log.txt") 
+
+        with open(error_log_path, 'w') as file:
+            file.writelines(line + '\n' for line in error_log) 
+
+        if iteration < MAX_ITERATIONS:
+            print(f"Attempting to fix the errors...")
+            fix_execution_errors(ai, dbs, project_prompt, iteration + 1)
+        else:
+            print(f"Failed to fix the errors after {MAX_ITERATIONS} attempts")
 
     return []
 
@@ -282,21 +326,79 @@ def use_feedback(ai: AI, dbs: DBs):
     return messages
 
 
-def fix_code(ai: AI, dbs: DBs):
+def fix_code(ai: AI, dbs: DBs, project_prompt: str = None):
+    print("Running fix_code")
     messages = AI.deserialize_messages(dbs.logs[gen_code.__name__])
+    execution_errors = check_execution_errors(dbs)
     code_output = messages[-1].content.strip()
     messages = [
         ai.fsystem(setup_sys_prompt(dbs)),
-        ai.fuser(f"Instructions: {dbs.input['prompt']}"),
+        ai.fuser(f"Instructions: {project_prompt}"),
         ai.fuser(code_output),
+        ai.fuser(f"Execution error(s) detected: {execution_errors}"),
         ai.fsystem(dbs.preprompts["fix_code"]),
     ]
     messages = ai.next(
         messages, "Please fix any errors in the code above.", step_name=curr_fn()
     )
     to_files(messages[-1].content.strip(), dbs.workspace)
+
+    # Original Implementation
+        # messages = AI.deserialize_messages(dbs.logs[gen_code.__name__])
+        # code_output = messages[-1].content.strip()
+        # messages = [
+        #     ai.fsystem(setup_sys_prompt(dbs)),
+        #     ai.fuser(f"Instructions: {dbs.input['prompt']}"),
+        #     ai.fuser(code_output),
+        #     ai.fsystem(dbs.preprompts["fix_code"]),
+        # ]
+        # messages = ai.next(
+        #     messages, "Please fix any errors in the code above.", step_name=curr_fn()
+        # )
+        # to_files(messages[-1].content.strip(), dbs.workspace)
     return messages
 
+
+# New Functions to support the new execution flow
+
+def check_execution_errors(dbs: DBs) -> List[str]:
+    errors = []
+    error_log_path = os.path.join(dbs.workspace.path, "error_log.txt") 
+    
+    if os.path.exists(error_log_path):
+        with open(error_log_path, 'r') as file:
+            lines = file.readlines()
+            if lines:
+                errors.append(lines[-1].strip())
+
+    return errors
+
+def fix_execution_errors(ai: AI, dbs: DBs, project_prompt: str = None, iteration: int = 0) -> List[dict]:
+    print(f"Execution attempt {iteration}")
+    execution_errors = check_execution_errors(dbs) # Function to check if there are any execution errors
+
+    if not execution_errors:
+        print("Execution successful")
+        return []
+
+    print(f"Execution error(s) detected: {execution_errors}")
+    print("Attempting to fix the error...")
+
+    # Apply the necessary fixes. This might involve calling existing functions like fix_code or other repair logic
+    if not fix_code(ai, dbs, project_prompt): # Function to apply the necessary fixes
+        print(f"Failed to fix the errors after {iteration} attempts")
+        return []
+
+    # If fixing was successful, execute the code again
+    execute_entrypoint(ai, dbs, project_prompt, iteration=iteration)
+    return []
+
+def apply_fixes(ai: AI, dbs: DBs, execution_errors: List[str]) -> bool:
+
+    for error in execution_errors:
+        print(f"Attempting to fix error: {error}")
+
+    return True
 
 def human_review(ai: AI, dbs: DBs, project_prompt: str = None) -> List[dict]:
     review = human_input()
@@ -334,7 +436,7 @@ STEPS = {
         gen_code,
         gen_entrypoint,
         execute_entrypoint,
-        human_review,
+        # human_review,
     ],
     Config.TDD_PLUS: [
         gen_spec,
@@ -343,7 +445,7 @@ STEPS = {
         fix_code,
         gen_entrypoint,
         execute_entrypoint,
-        human_review,
+        # human_review,
     ],
     Config.CLARIFY: [
         clarify,

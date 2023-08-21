@@ -3,7 +3,7 @@ import shutil
 
 from dataclasses import dataclass
 from pathlib import Path
-
+from gridfs import GridFSBucket
 
 # This class represents a simple database that stores its data as files in a directory.
 class DB:
@@ -40,7 +40,13 @@ class DB:
         else:
             # If val is neither a string nor bytes, raise an error.
             raise TypeError("val must be either a str or bytes")
-
+        
+    def save_files_to_gridfs(file_db_path, gridfs_db):
+        file_db_path = Path(file_db_path)
+        for file_path in file_db_path.iterdir():
+            if file_path.is_file():
+                with file_path.open("rb") as file:
+                     gridfs_db.fs.upload_from_stream(file_path.name, file.read())
 
 # dataclass for all dbs:
 @dataclass
@@ -51,7 +57,12 @@ class DBs:
     input: DB
     workspace: DB
     archive: DB
-
+    def save_files_to_gridfs(self, file_db_path, gridfs_db: GridFSBucket, metadata: dict):
+        file_db_path = Path(file_db_path)
+        for file_path in file_db_path.iterdir():
+            if file_path.is_file():
+                with file_path.open("rb") as file:
+                    gridfs_db.upload_from_stream(file_path.name, file.read(), metadata=metadata)
 
 def archive(dbs: DBs):
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")

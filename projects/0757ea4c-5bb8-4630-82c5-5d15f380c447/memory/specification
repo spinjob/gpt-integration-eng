@@ -1,0 +1,34 @@
+Program Specification:
+
+The program is a Python application that integrates two APIs: the Marketplace API and the Point-of-Sale API. The application will be triggered by a webhook called orderCreateWebhook from the Marketplace API. The webhook will be configured to send a POST request to a configured URL. 
+
+The application will perform a series of steps, each step being an HTTP request to one of the two APIs. The steps are as follows:
+
+1. Create an order in the Point-of-Sale API using data from the webhook.
+2. Update the order status in the Marketplace API.
+3. Get the menu from the Point-of-Sale API.
+4. If there is an error in any of the previous steps, publish the error to the Marketplace API.
+
+Each step involves data mapping from the input (webhook or previous step's response) to the output (request to the API). The data mapping will follow the provided Data Mapping JSON.
+
+Core Classes, Functions, Methods:
+
+1. `WebhookHandler`: This class will handle the incoming webhook. It will parse the webhook data and trigger the workflow.
+
+2. `APIClient`: This class will handle the communication with the APIs. It will have methods for each API endpoint that the workflow interacts with.
+
+3. `DataMapper`: This class will handle the data mapping from the input to the output. It will use the provided Data Mapping JSON to perform the mapping.
+
+4. `Workflow`: This class will orchestrate the workflow. It will call the appropriate methods of the `APIClient` class in the correct order, using the `DataMapper` to map the data between steps.
+
+5. `ErrorHandler`: This class will handle any errors that occur during the workflow. It will use the `APIClient` to publish the error to the Marketplace API.
+
+6. `TokenGenerator`: This class will handle the generation of tokens for the OAuth2 authentication of the APIs.
+
+7. `main()`: This function will be the entry point of the application. It will instantiate the `WebhookHandler` and start the webhook server.
+
+8. `ifthen()`, `substring()`, `prepend()`, `division()`: These functions will implement the formulas used in the data mapping. They will be called by the `DataMapper` as needed.
+
+9. `start_webhook_server()`: This function will start the webhook server. It will be called by the `main()` function.
+
+10. `stop_webhook_server()`: This function will stop the webhook server. It will be called when the application is shutting down.

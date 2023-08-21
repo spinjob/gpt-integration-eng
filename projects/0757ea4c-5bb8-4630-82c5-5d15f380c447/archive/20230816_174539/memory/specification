@@ -1,0 +1,36 @@
+Program Specification:
+
+The program is a Python3 application that integrates two APIs, the Marketplace API and the Point-of-Sale API. The application will be triggered by a webhook called orderCreateWebhook from the Marketplace API. The webhook will be configured to send a POST request to a configured URL. 
+
+The application will perform a series of steps, each step being an HTTP request to one of the two involved APIs. The steps are as follows:
+
+1. Create an order in the Point-of-Sale API using data from the webhook trigger.
+2. Update the order status in the Marketplace API.
+3. Get the menu from the Point-of-Sale API.
+4. If there is an error in any of the previous steps, publish the error to the Marketplace API.
+
+The data mapping between each step will be according to the provided JSON mapping instructions. 
+
+Core Classes, Functions, and Methods:
+
+1. `WebhookHandler`: This class will handle the incoming webhook from the Marketplace API. It will parse the webhook data and trigger the workflow.
+
+2. `APIClient`: This class will handle all interactions with the APIs. It will have methods for each of the API endpoints that need to be called in the workflow.
+
+3. `DataMapper`: This class will handle the data mapping between each step of the workflow. It will take the JSON mapping instructions and apply them to the data.
+
+4. `WorkflowManager`: This class will manage the workflow. It will call the appropriate methods on the `APIClient` and `DataMapper` classes in the correct order.
+
+5. `ErrorHandler`: This class will handle any errors that occur during the workflow. It will publish the error to the Marketplace API using the `APIClient`.
+
+6. `main()`: This function will be the entry point of the application. It will create instances of the above classes and start the workflow when a webhook is received.
+
+7. `get_auth_token(api_name)`: This function will handle the OAuth2 authentication for both APIs. It will return the access token that will be used for API requests.
+
+8. `if_then(input_value, condition, then_value, else_value)`: This function will implement the "If, then" formula used in the data mapping.
+
+9. `substring(input_value, starting_index, ending_index)`: This function will implement the "Substring" formula used in the data mapping.
+
+10. `prepend(input_value, prepend_value)`: This function will implement the "Prepend" formula used in the data mapping.
+
+11. `division(input_value, divisor)`: This function will implement the "Division" formula used in the data mapping.

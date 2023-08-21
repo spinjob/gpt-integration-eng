@@ -1,0 +1,80 @@
+Here are the tests based on the above specification. The tests are written using pytest.
+
+`test_webhookhandler.py`
+```python
+import pytest
+from webhookhandler import WebhookHandler
+
+def test_handle_webhook():
+    handler = WebhookHandler()
+    webhook_body = {"metadata": {"storeId": "test-store-id"}}
+    result = handler.handle_webhook(webhook_body)
+    assert result == "test-store-id"
+```
+
+`test_apirequester.py`
+```python
+import pytest
+from apirequester import APIRequester
+
+def test_get_request():
+    requester = APIRequester()
+    response = requester.get_request("https://partners.cloudkitchens.com/getMenu", {"X-Store-Id": "test-store-id"})
+    assert response.status_code == 200
+
+def test_post_request():
+    requester = APIRequester()
+    response = requester.post_request("https://partners.cloudkitchens.com/upsertMenu", {"categories": {"test-category-id": {"id": "test-category-id", "name": "test-category-name"}}})
+    assert response.status_code == 200
+```
+
+`test_datamapper.py`
+```python
+import pytest
+from datamapper import DataMapper
+
+def test_map_data():
+    mapper = DataMapper()
+    get_menu_response = {"categories": {"test-category-id": {"id": "test-category-id", "name": "test-category-name"}}}
+    mapping_json = {"categories.{{categoryId}}": {"input": {"path": "categories.{{categoryId}}"}, "output": {"path": "categories.{{categoryId}}"}}}
+    result = mapper.map_data(get_menu_response, mapping_json)
+    assert result == {"categories": {"test-category-id": {"id": "test-category-id", "name": "test-category-name"}}}
+```
+
+`test_oauth2authenticator.py`
+```python
+import pytest
+from oauth2authenticator import OAuth2Authenticator
+
+def test_get_access_token():
+    authenticator = OAuth2Authenticator()
+    token = authenticator.get_access_token()
+    assert isinstance(token, str)
+
+def test_refresh_access_token():
+    authenticator = OAuth2Authenticator()
+    new_token = authenticator.refresh_access_token("old-token")
+    assert isinstance(new_token, str)
+```
+
+`test_workflowmanager.py`
+```python
+import pytest
+from workflowmanager import WorkflowManager
+
+def test_start_workflow():
+    manager = WorkflowManager()
+    webhook_body = {"metadata": {"storeId": "test-store-id"}}
+    result = manager.start_workflow(webhook_body)
+    assert result == True
+```
+
+`test_main.py`
+```python
+import pytest
+from main import main
+
+def test_main():
+    result = main()
+    assert result == True
+```

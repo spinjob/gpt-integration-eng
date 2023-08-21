@@ -1,0 +1,114 @@
+requirements.txt
+```plaintext
+requests
+flask
+pytest
+```
+
+test_webhook_handler.py
+```python
+import pytest
+from webhook_handler import WebhookHandler
+
+def test_parse_webhook():
+    webhook_handler = WebhookHandler()
+    webhook_data = {"metadata": {"payload": {"currencyCode": "USD"}}}
+    parsed_data = webhook_handler.parse_webhook(webhook_data)
+    assert parsed_data == {"currencyCode": "USD"}
+```
+
+test_api_client.py
+```python
+import pytest
+from api_client import APIClient
+
+def test_create_order():
+    api_client = APIClient()
+    order_data = {"currencyCode": "USD"}
+    response = api_client.create_order(order_data)
+    assert response.status_code == 200
+
+def test_update_order_status():
+    api_client = APIClient()
+    order_id = "123"
+    status = "CONFIRMED"
+    response = api_client.update_order_status(order_id, status)
+    assert response.status_code == 200
+
+def test_get_menu():
+    api_client = APIClient()
+    response = api_client.get_menu()
+    assert response.status_code == 200
+
+def test_publish_error():
+    api_client = APIClient()
+    error_code = "404"
+    response = api_client.publish_error(error_code)
+    assert response.status_code == 200
+```
+
+test_data_mapper.py
+```python
+import pytest
+from data_mapper import DataMapper
+
+def test_map_data():
+    data_mapper = DataMapper()
+    mapping_instructions = {"currencyCode": {"input": {"path": "metadata.payload.currencyCode"}}}
+    webhook_data = {"metadata": {"payload": {"currencyCode": "USD"}}}
+    mapped_data = data_mapper.map_data(mapping_instructions, webhook_data)
+    assert mapped_data == {"currencyCode": "USD"}
+```
+
+test_workflow_manager.py
+```python
+import pytest
+from workflow_manager import WorkflowManager
+
+def test_run_workflow():
+    workflow_manager = WorkflowManager()
+    webhook_data = {"metadata": {"payload": {"currencyCode": "USD"}}}
+    response = workflow_manager.run_workflow(webhook_data)
+    assert response == "Workflow completed successfully"
+```
+
+test_error_handler.py
+```python
+import pytest
+from error_handler import ErrorHandler
+
+def test_handle_error():
+    error_handler = ErrorHandler()
+    error_code = "404"
+    response = error_handler.handle_error(error_code)
+    assert response == "Error published successfully"
+```
+
+test_main.py
+```python
+import pytest
+from main import main
+
+def test_main():
+    webhook_data = {"metadata": {"payload": {"currencyCode": "USD"}}}
+    response = main(webhook_data)
+    assert response == "Workflow completed successfully"
+```
+
+test_formulas.py
+```python
+import pytest
+from formulas import if_then, substring, prepend, division
+
+def test_if_then():
+    assert if_then("USD", "equals", "USD", "United States Dollar", "USD") == "United States Dollar"
+
+def test_substring():
+    assert substring("123456", 0, 4) == "1234"
+
+def test_prepend():
+    assert prepend("1234", "ID: ") == "ID: 1234"
+
+def test_division():
+    assert division(100, 10) == 10
+```

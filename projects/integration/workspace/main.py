@@ -1,31 +1,15 @@
-import schedule
-import time
-from api_client import APIClient
-from token_generator import TokenGenerator
-from data_transformer import DataTransformer
+from api_integration import APIIntegration
+from schedule import Scheduler
 
-def run_integration():
-    # Generate bearer tokens
-    token_generator = TokenGenerator()
-    token1 = token_generator.generate_token('client_id1', 'client_secret1', 'scope1')
-    token2 = token_generator.generate_token('client_id2', 'client_secret2', 'scope2')
+def main():
+    # Create an instance of the APIIntegration class
+    integration = APIIntegration()
 
-    # Make a GET request to API #1
-    api_client = APIClient()
-    response = api_client.get('https://partners.cloudkitchens.com/v1/menu', token1)
+    # Create an instance of the Scheduler class
+    scheduler = Scheduler()
 
-    # Transform the data
-    data_transformer = DataTransformer()
-    transformed_data = data_transformer.transform(response.json())
+    # Schedule the integration to run at the specified times
+    scheduler.schedule(integration.run, 'weekly', days=['Monday', 'Thursday', 'Saturday'], time='19:00')
 
-    # Make a POST request to API #2
-    api_client.post('https://partners.cloudkitchens.com/v1/menus', token2, transformed_data)
-
-# Schedule the job to run weekly at 7:00 PM Eastern Standard Time on Monday, Thursday, and Saturday
-schedule.every().monday.at("19:00").do(run_integration)
-schedule.every().thursday.at("19:00").do(run_integration)
-schedule.every().saturday.at("19:00").do(run_integration)
-
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+if __name__ == "__main__":
+    main()

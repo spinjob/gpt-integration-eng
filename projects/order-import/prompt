@@ -1,0 +1,47 @@
+Objective: Build an integration between the specified APIs in python with comments to allow a developer to understand the components of the implementation.  
+
+Variables: Double curly brackets refer to a variable whose value will have to be generated or will be provided by input data. Curly brackets define a variable.  If the variable is in the "Mapping Table" between steps, then it's value should be set according to the formula and the input.  If the variable is not in the "Mapping Table", assume it is hardcoded.  
+
+Mapping Tables: Between API Requests, there may be a "Mapping Table." The "Mapping Table" will contain three columns: INPUT_OBJECT_PROPERTY_PATH, FORMULA, and OUTPUT_OBJECT_PROPERTY_PATH. INPUT_OBJECT_PROPERTY_PATH values are dot-notation representations of a property in an input JSON object (i.e. a REST API response body.)  FORMULA values specify changes to the value of the INPUT_OBJECT_PROPERTY_PATH value that need to be made before setting that value to the output object's property.  The OUTPUT_OBJECT_PROPERTY_PATH values are dot-notation representations of a property in an object that will be the request body for another API request.
+
+// INFORMATION ABOUT THE INVOLVED APIS (AUTHENTICATION AND BASE URLS FOR REQUESTS)
+1. API #1
+1a. Base URL: https://partners.cloudkitchens.com
+1b. Authentication: OAuth 2.0 
+1c. How to Generate a Token
+- Make an HTTP Request : 
+    Path: POST https://partners.cloudkitchens.com/v1/auth/token
+    Method: POST
+    Form-Encoded (x-www-form-urlencoded): [scope: "menus.get_current menus.publish orders.update storefront.store_availability menus.entity_suspension orders.create", grant_type: 'client_credentials', client_id: {clientId}, client_secret: {clientSecret}]
+- Store the Token: The response will contain an object with the token stored at '.access_token' as a String.
+
+2. API #2
+2a. Base URL: https://partners.cloudkitchens.com
+2b. Authentication: OAuth 2.0
+2c. How to Generate a Token
+- Make an HTTP Request : 
+    Path: POST https://partners.cloudkitchens.com/v1/auth/token
+    Method: POST
+    Form-Encoded (x-www-form-urlencoded): [scope: "callback.error.write manager.menus manager.orders menus.async_job.read menus.get_current menus.read menus.upsert menus.upsert_hours orders.read ping", grant_type: 'client_credentials', client_id: {clientId}, client_secret: {clientSecret}]
+- Store the Token: The response will contain an object with the token stored at '.access_token' as a String.
+
+//HOW THE INTEGRATION SHOULD BE RUN
+This integration should run on the following cadence: Weekly at 7:00 PM Eastern Standard Time on Monday, Thursday, and Saturday.  
+
+// HERE IS A DESCRIPTION OF THE STEPS FOR THE INTEGRATION
+Step 1. Generate bearer tokens for both API #1 and API #2.  These will be used to make the HTTP requests specified in this workflow.
+Step 2. Make a GET request to API #1 at the path /v1/menu with the following Headers and Parameters:
+    Step 2a. Request Headers (key and value type): ["X-Store-Id": "String", "Authorization": "Bearer {token}"]
+
+Step 3. When a response is received, translate the JSON into a new JSON object according to the mapping table below.  The INPUT_OBJECT_PROPERTY_PATH contains the dot-notation representation of an input object property stored in the JSON of an API response.  It describes the structure of the object you will receive from the API request.  The value of that property will need to have the FORMULA applied to it to produce the output value (if the formula is One to One then the value is not changed.) The OUTPUT_OBJECT_PROPERTY_PATH is the dot-notation representation of an output object property.  The output properties combined describe all of the required output object properties.  If there are any {} they represTheent variables that should be set according to the input value and the formula to apply.
+If the formula is "No Changes to Input", then the input property's value will not need to change when setting the output object's property.
+
+//Mapping Table
+INPUT_OBJECT_PROPERTY_PATH	FORMULA	OUTPUT_OBJECT_PROPERTY_PATH
+categories.{categoryId}	No Changes to Input	categories.{categoryId}
+categories.{categoryId}.id	No Changes to Input	categories.{categoryId}.id
+categories.{categoryId}.name	No Changes to Input	categories.{categoryId}.name
+modifierGroups.{modifierGroupId}	No Changes to Input	modifierGroups.{modifierGroupId}
+
+Step 4. Using the result of the translation as the Request Body, make a POST request to API #2's /v1/menus path with the following headers and parameters:
+Step 4a. Request Headers (key and value type): ["X-Store-Id": "String", "Authorization": "Bearer {token}"]

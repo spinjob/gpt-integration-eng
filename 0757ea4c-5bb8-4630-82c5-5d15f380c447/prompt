@@ -1,0 +1,616 @@
+Objective: Implement a Python application that integrates two APIs according to the specified API-specific security schemes and workflow requirements.  If the language is Python3 (not Python), ensure the applications is run with 'python3 main.py' as it will break otherwise.  The code should completely implement the workflow trigger, each step of the workflow, and the data mapping between each step according to the requirements.  An engineer will need to compile and run the code quickly and simply.  The workflow you implement should be triggered on the receipt of a webhook or on a scheduled cadence (depending on the defined workflow trigger in the prompt).
+
+API Context and Instructions: There are two REST Application Programming Interfaces (APIs) whose supported authentication schemes, requests, and data models that will be referenced in the requirements for this application.  In this section we define two categories of API information (1) The base URLs for a production and or a sandbox server for each API. These can be used to build the full HTTP request paths. (2) The Authentication or Security Scheme supported by the API.  Each APIs authentication scheme needs to be adhered to when you develop the project, so implement the project accordingly. 
+
+API Name: Marketplace API
+Sandbox Server: https://partners.cloudkitchens.com
+
+First API:
+API Name: Point-of-Sale API
+Sandbox Server: https://partners.cloudkitchens.com
+
+Second API:
+The authentication schemes supported by each API are as follows: 
+
+API: Marketplace API Authentication:
+Security Scheme Type: oauth2
+Security Scheme Flow Type: clientCredentials
+Security Scheme Flow Token URL: https://partners.cloudkitchens.com/v1/auth/token
+Token Generation Request Parameters: The generate token request will require the following parameters sent as www-form-urlencoded data: 
+- Property Key: client_id. Property Description: client_id is a string value that will be manually configured. Test Value: be04e745-844d-4a6c-8fba-f71199dc8f05
+- Property Key: client_secret. Property Description: client_secret is a string value that will be manually configured. Test Value: MD727PM35KZCWP337TKQ
+- Property Key: scope. Property Description: is a string with the value: callback.error.write manager.menus manager.orders menus.async_job.read menus.get_current menus.read menus.upsert menus.upsert_hours orders.read ping
+- Property Key: grant_type. Property Description: is a string with the value: client_credentials
+
+API: Point-of-Sale API Authentication:
+Security Scheme Type: oauth2
+Security Scheme Flow Type: clientCredentials
+Security Scheme Flow Token URL: https://partners.cloudkitchens.com/v1/auth/token
+Token Generation Request Parameters: The generate token request will require the following parameters sent as www-form-urlencoded data: 
+- Property Key: client_id. Property Description: client_id is a string value that will be manually configured. Test Value: 04db98cc-0c84-47e2-b57f-bfd6329c4675
+- Property Key: client_secret. Property Description: client_secret is a string value that will be manually configured. Test Value: NUCGB6VKFLYQBZPMMBLA
+- Property Key: scope. Property Description: is a string with the value: menus.get_current menus.publish orders.update storefront.store_availability menus.entity_suspension orders.create
+- Property Key: grant_type. Property Description: is a string with the value: client_credentials
+
+
+
+Workflow Context and Instructions: The integration workflow will be defined by a "workflow trigger" and series of sequential "workflow steps." A workflow trigger is the definition of the condition required to run the application.  Each step will be an HTTP request to one of the two involved APIs. 
+
+ Workflow Trigger Instructions: The workflow will be triggered by a webhook called orderCreateWebhook from API (2389bc50-2646-4e94-bb34-86c9ea23cd7e).  The webhook will be configured to send a POST request to a configured URL.  Use a placeholder for the webhook URL.
+
+Workflow Steps Instructions: The following series of steps will contain a combination of text and JSON to describe each HTTP request.  The text will describe the details of the HTTP request (the API that supports the request, the HTTP method, and the path to append to the server base URL for the API.  
+
+ The Data Mapping JSON will provide you detailed instructions on how to map and adapt a value coming from a configuration, webhook request body, or previous HTTP requests response body. The keys of the object represent either the key of a header/path/query parameter OR a dot-notation representation of a property in a request body. The Data Mapping JSON is provided to describe how you find input data, what formulas to apply to the input value, and what property of the output the value should be set for.  Do not write code assuming the JSON will be provided.  Here are descriptions of the Data Mapping JSONs primary properties 
+
+ (MAPPING JSON PROPERTY: .input): The source of the value to use for the output property.  It will include an "in" property that will tell you where in the previous step to look for it; if it is "body" and the sourceNode is "trigger", then you will find the source value in the body of the webhook trigger.  If "in" is "body" and the sourceNode is an "action" then you will find the value in the response body of the previous steps HTTP request.  The "sourcePath" of the "input" is a dot-notation representation of where the property is located in an object like a webhook or response body. 
+
+ (MAPPING JSON PROPERTY .input.formulas) This array contains objects that each describe a function to apply to the input value to create the output value. The functions described should be applied in the order they appearin the array. If no "formulas" property exists or its empty for an input that means you should assume the value of the input is set to the output property without changing it.  
+
+ (MAPPING JSON PROPERTY: .output) The details of the parameter or property that will contain the value from the input in the current steps HTTP request. The "output.in" value will tell you if the property is a header parameter, path parameter, query parameter, or a propert in the request body.  If "in" === "body, then "outputPath" will describe a dot-notation representation of where the property is in the request body object.
+
+Step 1: API (identifier:98ef9a91-f0ca-4e0a-acd3-4618904fd6b4) createOrder
+Step 1 Data Mapping JSON:
+{
+  "currencyCode": {
+    "input": {
+      "type": "string",
+      "path": "metadata.payload.currencyCode",
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e",
+      "formulas": [
+        {
+          "name": "If, then",
+          "formula": "ifthen",
+          "uuid": "d181ae65-0107-481f-bd8e-fb40210c34c1",
+          "inputs": {
+            "ifThen": [
+              {
+                "uuid": "ad27de29-9f59-400b-ad44-d1f126c4fbc0",
+                "if": {
+                  "property": {
+                    "type": "string",
+                    "path": "metadata.payload.currencyCode"
+                  },
+                  "condition": "equals",
+                  "value": "USD",
+                  "or": []
+                },
+                "then": {
+                  "property": {
+                    "path": "currencyCode",
+                    "type": "string"
+                  },
+                  "condition": "equals",
+                  "value": "United States Dollar"
+                },
+                "else": {
+                  "property": {
+                    "path": "currencyCode",
+                    "type": "string"
+                  },
+                  "condition": "equals",
+                  "value": "USD"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "path": "currencyCode",
+      "type": "string",
+      "in": "body",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "metadata.payload.currencyCode",
+    "targetPath": "currencyCode",
+    "sourceNode": "trigger"
+  },
+  "status": {
+    "input": {
+      "type": "string",
+      "enum": [
+        "NEW_ORDER",
+        "CONFIRMED",
+        "PICKED_UP",
+        "CANCELED",
+        "FULFILLED",
+        "PREPARED",
+        "REJECTED",
+        "UNKNOWN"
+      ],
+      "path": "metadata.payload.status",
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e",
+      "formulas": [
+        {
+          "name": "If, then",
+          "formula": "ifthen",
+          "uuid": "b5aefb64-8743-4818-9e92-47a5406a332c",
+          "inputs": {
+            "ifThen": [
+              {
+                "uuid": "252329c4-3e03-46ac-ab56-931039e2944c",
+                "if": {
+                  "property": {
+                    "type": "string",
+                    "enum": [
+                      "NEW_ORDER",
+                      "CONFIRMED",
+                      "PICKED_UP",
+                      "CANCELED",
+                      "FULFILLED",
+                      "PREPARED",
+                      "REJECTED",
+                      "UNKNOWN"
+                    ],
+                    "path": "metadata.payload.status"
+                  },
+                  "condition": "equals",
+                  "value": "NEW_ORDER",
+                  "or": []
+                },
+                "then": {
+                  "property": {
+                    "path": "status",
+                    "type": "string",
+                    "enum": [
+                      "NEW_ORDER",
+                      "CONFIRMED",
+                      "PICKED_UP",
+                      "CANCELED",
+                      "FULFILLED",
+                      "PREPARED",
+                      "REJECTED",
+                      "UNKNOWN"
+                    ]
+                  },
+                  "condition": "equals",
+                  "value": "NEW_ORDER"
+                },
+                "else": {
+                  "property": {
+                    "path": "status",
+                    "type": "string",
+                    "enum": [
+                      "NEW_ORDER",
+                      "CONFIRMED",
+                      "PICKED_UP",
+                      "CANCELED",
+                      "FULFILLED",
+                      "PREPARED",
+                      "REJECTED",
+                      "UNKNOWN"
+                    ]
+                  },
+                  "condition": "equals",
+                  "value": "CONFIRMED"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "output": {
+      "path": "status",
+      "type": "string",
+      "enum": [
+        "NEW_ORDER",
+        "CONFIRMED",
+        "PICKED_UP",
+        "CANCELED",
+        "FULFILLED",
+        "PREPARED",
+        "REJECTED",
+        "UNKNOWN"
+      ],
+      "in": "body",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "metadata.payload.status",
+    "targetPath": "status",
+    "sourceNode": "trigger"
+  },
+  "externalIdentifiers.id": {
+    "input": {
+      "type": "string",
+      "path": "metadata.payload.externalIdentifiers.id",
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "output": {
+      "path": "externalIdentifiers.id",
+      "type": "string",
+      "parentContext": [],
+      "in": "body",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "metadata.payload.externalIdentifiers.id",
+    "targetPath": "externalIdentifiers.id",
+    "sourceNode": "trigger"
+  },
+  "X-Store-Id": {
+    "input": {
+      "type": "string",
+      "path": "metadata.storeId",
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "output": {
+      "type": "string",
+      "path": "X-Store-Id",
+      "name": "X-Store-Id",
+      "in": "header",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "metadata.storeId",
+    "targetPath": "X-Store-Id",
+    "sourceNode": "trigger"
+  },
+  "externalIdentifiers.friendlyId": {
+    "input": {
+      "type": "string",
+      "path": "metadata.payload.externalIdentifiers.id",
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e",
+      "formulas": [
+        {
+          "name": "Substring",
+          "formula": "substring",
+          "inputs": {
+            "substring": {
+              "startingIndex": "input.length",
+              "endingIndex": 4
+            }
+          },
+          "uuid": "c5d2a456-19c8-47f7-ac33-988fe880e90d"
+        },
+        {
+          "name": "Prepend",
+          "formula": "prepend",
+          "inputs": {
+            "prepend": "metadata.payload.externalIdentifiers.source"
+          },
+          "uuid": "b3b89fef-b51d-4ce3-ae71-0636d7689dd9"
+        }
+      ]
+    },
+    "output": {
+      "path": "externalIdentifiers.friendlyId",
+      "type": "string",
+      "parentContext": [],
+      "in": "body",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "metadata.payload.externalIdentifiers.id",
+    "targetPath": "externalIdentifiers.friendlyId",
+    "sourceNode": "trigger"
+  },
+  "items.quantity": {
+    "input": {
+      "minimum": 1,
+      "maximum": 1000,
+      "type": "integer",
+      "format": "int32",
+      "path": "metadata.payload.items.quantity",
+      "parentContext": [
+        {
+          "contextType": "array",
+          "parentContextKey": "items",
+          "path": "metadata.payload.items.quantity"
+        }
+      ],
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "output": {
+      "minimum": 1,
+      "maximum": 1000,
+      "type": "integer",
+      "format": "int32",
+      "path": "items.quantity",
+      "parentContext": [
+        {
+          "contextType": "array",
+          "parentContextKey": "items",
+          "path": "items.quantity"
+        }
+      ],
+      "in": "body",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "metadata.payload.items.quantity",
+    "targetPath": "items.quantity",
+    "sourceNode": "trigger"
+  },
+  "items.skuPrice": {
+    "input": {
+      "type": "number",
+      "nullable": true,
+      "readOnly": true,
+      "path": "metadata.payload.items.skuPrice",
+      "parentContext": [
+        {
+          "contextType": "array",
+          "parentContextKey": "items",
+          "path": "metadata.payload.items.skuPrice"
+        }
+      ],
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "output": {
+      "path": "items.skuPrice",
+      "type": "number",
+      "nullable": true,
+      "readOnly": true,
+      "parentContext": [
+        {
+          "contextType": "array",
+          "parentContextKey": "items",
+          "path": "items.skuPrice"
+        }
+      ],
+      "in": "body",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "metadata.payload.items.skuPrice",
+    "targetPath": "items.skuPrice",
+    "sourceNode": "trigger"
+  },
+  "items.id": {
+    "input": {
+      "type": "string",
+      "nullable": true,
+      "path": "metadata.payload.items.id",
+      "parentContext": [
+        {
+          "contextType": "array",
+          "parentContextKey": "items",
+          "path": "metadata.payload.items.id"
+        }
+      ],
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "output": {
+      "path": "items.id",
+      "type": "string",
+      "nullable": true,
+      "parentContext": [
+        {
+          "contextType": "array",
+          "parentContextKey": "items",
+          "path": "items.id"
+        }
+      ],
+      "in": "body",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "metadata.payload.items.id",
+    "targetPath": "items.id",
+    "sourceNode": "trigger"
+  },
+  "customerPayments.value": {
+    "input": {
+      "type": "number",
+      "path": "metadata.payload.customerPayments.value",
+      "parentContext": [
+        {
+          "contextType": "array",
+          "parentContextKey": "customerPayments",
+          "path": "metadata.payload.customerPayments.value"
+        }
+      ],
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "output": {
+      "type": "number",
+      "path": "customerPayments.value",
+      "parentContext": [
+        {
+          "contextType": "array",
+          "parentContextKey": "customerPayments",
+          "path": "customerPayments.value"
+        }
+      ],
+      "in": "body",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "metadata.payload.customerPayments.value",
+    "targetPath": "customerPayments.value",
+    "sourceNode": "trigger"
+  },
+  "orderTotal.subtotal": {
+    "input": {
+      "type": "number",
+      "path": "metadata.payload.orderTotal.subtotal",
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e",
+      "formulas": [
+        {
+          "name": "Division",
+          "formula": "division",
+          "inputs": {
+            "division": 100
+          },
+          "uuid": "3e32902b-a9cf-4da6-95c8-525cfc85c606"
+        }
+      ]
+    },
+    "output": {
+      "type": "number",
+      "path": "orderTotal.subtotal",
+      "in": "body",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "metadata.payload.orderTotal.subtotal",
+    "targetPath": "orderTotal.subtotal",
+    "sourceNode": "trigger"
+  }
+}Step 2: API (identifier:2389bc50-2646-4e94-bb34-86c9ea23cd7e) updateOrderStatus
+Step 2 Data Mapping JSON:
+{
+  "X-Store-Id": {
+    "input": {
+      "path": "$variable.testStoreId",
+      "type": "string",
+      "value": "d6cec45b-f9ec-4658-b593-7cd355d86a93",
+      "in": "body",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "output": {
+      "type": "string",
+      "path": "X-Store-Id",
+      "name": "X-Store-Id",
+      "in": "header",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "sourcePath": "$variable.testStoreId",
+    "targetPath": "X-Store-Id",
+    "sourceNode": "action-1-0757ea4c-5bb8-4630-82c5-5d15f380c447"
+  },
+  "orderStatus": {
+    "input": {
+      "path": "$variable.status",
+      "type": "string",
+      "value": "PREPARED",
+      "in": "body",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "output": {
+      "path": "orderStatus",
+      "type": "string",
+      "enum": [
+        "PREPARED",
+        "CANCELED",
+        "FULFILLED"
+      ],
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "sourcePath": "$variable.status",
+    "targetPath": "orderStatus",
+    "sourceNode": "action-1-0757ea4c-5bb8-4630-82c5-5d15f380c447"
+  },
+  "orderId": {
+    "input": {
+      "type": "string",
+      "path": "externalIdentifiers.id",
+      "in": "body",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "output": {
+      "type": "string",
+      "path": "orderId",
+      "name": "orderId",
+      "in": "path",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "sourcePath": "externalIdentifiers.id",
+    "targetPath": "orderId",
+    "sourceNode": "action-1-0757ea4c-5bb8-4630-82c5-5d15f380c447"
+  }
+}Step 3: API (identifier:98ef9a91-f0ca-4e0a-acd3-4618904fd6b4) getMenu
+Step 3 Data Mapping JSON:
+{
+  "X-Store-Id": {
+    "input": {
+      "path": "$variable.testStoreId",
+      "type": "string",
+      "value": "d6cec45b-f9ec-4658-b593-7cd355d86a93",
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "output": {
+      "type": "string",
+      "path": "X-Store-Id",
+      "name": "X-Store-Id",
+      "in": "header",
+      "apiId": "98ef9a91-f0ca-4e0a-acd3-4618904fd6b4"
+    },
+    "sourcePath": "$variable.testStoreId",
+    "targetPath": "X-Store-Id",
+    "sourceNode": "action-2-8d98671a-0a94-4a07-8495-593c88abfd3e"
+  }
+}Step 4: API (identifier:2389bc50-2646-4e94-bb34-86c9ea23cd7e) publishError
+Step 4 Data Mapping JSON:
+{
+  "X-Store-Id": {
+    "input": {
+      "path": "$variable.testStoreId",
+      "type": "string",
+      "value": "d6cec45b-f9ec-4658-b593-7cd355d86a93",
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "output": {
+      "type": "string",
+      "path": "X-Store-Id",
+      "name": "X-Store-Id",
+      "in": "header",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "sourcePath": "$variable.testStoreId",
+    "targetPath": "X-Store-Id",
+    "sourceNode": "action-2-8d98671a-0a94-4a07-8495-593c88abfd3e"
+  },
+  "X-Event-Id": {
+    "input": {
+      "path": "$variable.testStoreId",
+      "type": "string",
+      "value": "d6cec45b-f9ec-4658-b593-7cd355d86a93",
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "output": {
+      "type": "string",
+      "path": "X-Event-Id",
+      "name": "X-Event-Id",
+      "in": "header",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "sourcePath": "$variable.testStoreId",
+    "targetPath": "X-Event-Id",
+    "sourceNode": "action-2-8d98671a-0a94-4a07-8495-593c88abfd3e"
+  },
+  "errorCode": {
+    "input": {
+      "path": "$variable.errorCode",
+      "type": "string",
+      "value": "404",
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "output": {
+      "path": "errorCode",
+      "type": "string",
+      "enum": [
+        "CANCELLED",
+        "UNKNOWN",
+        "INVALID_ARGUMENT",
+        "FAILED_PRECONDITION",
+        "DEADLINE_EXCEEDED",
+        "NOT_FOUND",
+        "PERMISSION_DENIED",
+        "ALREADY_EXISTS",
+        "RESOURCE_EXHAUSTED",
+        "ABORTED",
+        "OUT_OF_RANGE",
+        "UNIMPLEMENTED",
+        "INTERNAL",
+        "UNAVAILABLE",
+        "DATA_LOSS",
+        "UNAUTHENTICATED"
+      ],
+      "in": "body",
+      "apiId": "2389bc50-2646-4e94-bb34-86c9ea23cd7e"
+    },
+    "sourcePath": "$variable.errorCode",
+    "targetPath": "errorCode",
+    "sourceNode": "action-2-8d98671a-0a94-4a07-8495-593c88abfd3e"
+  }
+}

@@ -1,102 +1,98 @@
-The architecture of the solution will consist of the following files:
+Let's start by creating the main entry point file, `main.py`. This file will contain the main function that will be executed to run the integration.
 
-1. `main.py`: This is the entry point of the application. It will contain the main function that will be executed to run the integration process.
-
-2. `api_client.py`: This file will contain the `APIClient` class which will be responsible for making HTTP requests to the APIs.
-
-3. `token_generator.py`: This file will contain the `TokenGenerator` class which will be responsible for generating bearer tokens for the APIs.
-
-4. `data_transformer.py`: This file will contain the `DataTransformer` class which will be responsible for transforming the data received from API #1 to the format required by API #2.
-
-5. `requirements.txt`: This file will contain the list of Python packages required to run the application.
-
-Now, let's write the content of each file.
-
-`main.py`
+main.py
 ```python
-import schedule
-import time
-from api_client import APIClient
-from token_generator import TokenGenerator
-from data_transformer import DataTransformer
+from api_integration import APIIntegration
+from schedule import Scheduler
 
-def run_integration():
-    # Generate bearer tokens
-    token_generator = TokenGenerator()
-    token1 = token_generator.generate_token('client_id1', 'client_secret1', 'scope1')
-    token2 = token_generator.generate_token('client_id2', 'client_secret2', 'scope2')
+def main():
+    # Create an instance of the APIIntegration class
+    integration = APIIntegration()
 
-    # Make a GET request to API #1
-    api_client = APIClient()
-    response = api_client.get('https://partners.cloudkitchens.com/v1/menu', token1)
+    # Create an instance of the Scheduler class
+    scheduler = Scheduler()
 
-    # Transform the data
-    data_transformer = DataTransformer()
-    transformed_data = data_transformer.transform(response.json())
+    # Schedule the integration to run at the specified times
+    scheduler.schedule(integration.run, 'weekly', days=['Monday', 'Thursday', 'Saturday'], time='19:00')
 
-    # Make a POST request to API #2
-    api_client.post('https://partners.cloudkitchens.com/v1/menus', token2, transformed_data)
-
-# Schedule the job to run weekly at 7:00 PM Eastern Standard Time on Monday, Thursday, and Saturday
-schedule.every().monday.at("19:00").do(run_integration)
-schedule.every().thursday.at("19:00").do(run_integration)
-schedule.every().saturday.at("19:00").do(run_integration)
-
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+if __name__ == "__main__":
+    main()
 ```
 
-`api_client.py`
+Next, we will create the `api_integration.py` file. This file will contain the `APIIntegration` class, which will handle the integration between the two APIs.
+
+api_integration.py
 ```python
 import requests
+from translator import Translator
 
-class APIClient:
-    def get(self, url, token):
-        headers = {'Authorization': f'Bearer {token}'}
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        return response
+class APIIntegration:
+    def __init__(self):
+        self.translator = Translator()
 
-    def post(self, url, token, data):
-        headers = {'Authorization': f'Bearer {token}'}
-        response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status()
-        return response
-```
+    def run(self):
+        # Generate bearer tokens for both APIs
+        token1 = self.get_token('https://partners.cloudkitchens.com/v1/auth/token', 'client_credentials', 'clientId1', 'clientSecret1', 'menus.get_current menus.publish orders.update storefront.store_availability menus.entity_suspension orders.create')
+        token2 = self.get_token('https://partners.cloudkitchens.com/v1/auth/token', 'client_credentials', 'clientId2', 'clientSecret2', 'callback.error.write manager.menus manager.orders menus.async_job.read menus.get_current menus.read menus.upsert menus.upsert_hours orders.read ping')
 
-`token_generator.py`
-```python
-import requests
+        # Make a GET request to API #1
+        response = requests.get('https://partners.cloudkitchens.com/v1/menu', headers={'X-Store-Id': 'storeId', 'Authorization': f'Bearer {token1}'})
 
-class TokenGenerator:
-    def generate_token(self, client_id, client_secret, scope):
-        data = {
-            'grant_type': 'client_credentials',
-            'client_id': client_id,
-            'client_secret': client_secret,
-            'scope': scope
-        }
-        response = requests.post('https://partners.cloudkitchens.com/v1/auth/token', data=data)
-        response.raise_for_status()
+        # Translate the response into a new JSON object
+        translated_data = self.translator.translate(response.json())
+
+        # Make a POST request to API #2
+        requests.post('https://partners.cloudkitchens.com/v1/menus', headers={'X-Store-Id': 'storeId', 'Authorization': f'Bearer {token2}'}, json=translated_data)
+
+    def get_token(self, url, grant_type, client_id, client_secret, scope):
+        # Make a POST request to get the token
+        response = requests.post(url, data={'grant_type': grant_type, 'client_id': client_id, 'client_secret': client_secret, 'scope': scope})
+
+        # Return the token
         return response.json()['access_token']
 ```
 
-`data_transformer.py`
+Next, we will create the `translator.py` file. This file will contain the `Translator` class, which will handle the translation of the JSON data.
+
+translator.py
 ```python
-class DataTransformer:
-    def transform(self, data):
-        transformed_data = {
-            'categories': data['categories'],
-            'modifierGroups': data['modifierGroups']
+class Translator:
+    def translate(self, data):
+        # Translate the data according to the mapping table
+        translated_data = {
+            'categories': {categoryId: data['categories'][categoryId] for categoryId in data['categories']},
+            'modifierGroups': {modifierGroupId: data['modifierGroups'][modifierGroupId] for modifierGroupId in data['modifierGroups']}
         }
-        return transformed_data
+
+        # Return the translated data
+        return translated_data
 ```
 
-`requirements.txt`
+Finally, we will create the `schedule.py` file. This file will contain the `Scheduler` class, which will handle the scheduling of the integration.
+
+schedule.py
+```python
+import schedule
+import time
+
+class Scheduler:
+    def schedule(self, job, frequency, days, time):
+        # Schedule the job to run at the specified frequency, days, and time
+        for day in days:
+            schedule.every().day.at(time).do(job)
+
+        # Keep the script running
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
+```
+
+We also need to create a `requirements.txt` file to specify the dependencies of the project.
+
+requirements.txt
 ```
 requests==2.25.1
 schedule==1.1.0
 ```
 
-Please replace `'client_id1'`, `'client_secret1'`, `'scope1'`, `'client_id2'`, `'client_secret2'`, and `'scope2'` with the actual values.
+This completes the implementation of the integration. The `main.py` file should be run to start the integration.

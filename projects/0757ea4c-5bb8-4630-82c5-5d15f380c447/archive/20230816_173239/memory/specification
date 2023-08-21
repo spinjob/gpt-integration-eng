@@ -1,0 +1,30 @@
+Program Specification:
+
+The program is a Python application that integrates two APIs: Point-of-Sale API and Marketplace API. The application will be triggered by a webhook called orderCreateWebhook from the Marketplace API. The webhook will be configured to send a POST request to a configured URL. 
+
+The application will perform a series of steps, each step being an HTTP request to one of the two involved APIs. The steps are as follows:
+
+1. Create an order in the Point-of-Sale API using data from the webhook.
+2. Update the order status in the Marketplace API.
+3. Get the menu from the Point-of-Sale API.
+4. If there is an error in any of the previous steps, publish the error to the Marketplace API.
+
+The data mapping between each step will be according to the provided JSON mapping.
+
+Core Classes, Functions, and Methods:
+
+1. `APIClient`: This class will be responsible for making HTTP requests to the APIs. It will have methods for each type of request (GET, POST, etc.) and will handle the authentication for each API.
+
+2. `WebhookHandler`: This class will be responsible for receiving the webhook and triggering the workflow. It will parse the webhook data and pass it to the workflow.
+
+3. `Workflow`: This class will be responsible for executing the steps of the workflow. It will use the `APIClient` to make the necessary API requests and will handle the data mapping between each step.
+
+4. `DataMapper`: This class will be responsible for mapping the data between each step according to the provided JSON mapping. It will have methods for each type of mapping (body, header, path, etc.).
+
+5. `ErrorHandler`: This class will be responsible for handling any errors that occur during the workflow. It will use the `APIClient` to publish the error to the Marketplace API.
+
+6. `main()`: This function will be the entry point of the application. It will create instances of the above classes and start the webhook listener.
+
+7. `get_token()`: This function will be responsible for getting the OAuth2 token for each API. It will be called by the `APIClient` class.
+
+8. `if_then()`, `substring()`, `prepend()`, `division()`: These functions will be responsible for applying the formulas specified in the JSON mapping. They will be called by the `DataMapper` class.
